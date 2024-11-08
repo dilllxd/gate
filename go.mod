@@ -22,7 +22,7 @@ require (
 	github.com/robinbraemer/event v0.0.1
 	github.com/rs/xid v1.6.0
 	github.com/sandertv/go-raknet v1.13.0
-	github.com/sandertv/gophertunnel v1.37.0
+	github.com/sandertv/gophertunnel v1.42.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli/v2 v2.27.5
