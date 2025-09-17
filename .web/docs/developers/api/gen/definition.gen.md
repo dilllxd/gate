@@ -16,6 +16,7 @@ description: "Generated protocol documentation for Gate Minecraft proxy API. Com
     - [ApplyConfigResponse](#minekube-gate-v1-ApplyConfigResponse)
     - [BedrockPlayerData](#minekube-gate-v1-BedrockPlayerData)
     - [ClassicStats](#minekube-gate-v1-ClassicStats)
+    - [ConfigUpdateEvent](#minekube-gate-v1-ConfigUpdateEvent)
     - [ConnectConfig](#minekube-gate-v1-ConnectConfig)
     - [ConnectPlayerRequest](#minekube-gate-v1-ConnectPlayerRequest)
     - [ConnectPlayerResponse](#minekube-gate-v1-ConnectPlayerResponse)
@@ -46,8 +47,14 @@ description: "Generated protocol documentation for Gate Minecraft proxy API. Com
     - [LiteRouteFallbackPlayers](#minekube-gate-v1-LiteRouteFallbackPlayers)
     - [LiteRouteFallbackVersion](#minekube-gate-v1-LiteRouteFallbackVersion)
     - [LiteRouteOptions](#minekube-gate-v1-LiteRouteOptions)
+    - [LiteRouteUpdateEvent](#minekube-gate-v1-LiteRouteUpdateEvent)
     - [LiteStats](#minekube-gate-v1-LiteStats)
     - [Player](#minekube-gate-v1-Player)
+    - [PlayerConnectEvent](#minekube-gate-v1-PlayerConnectEvent)
+    - [PlayerDisconnectEvent](#minekube-gate-v1-PlayerDisconnectEvent)
+    - [PlayerServerSwitchEvent](#minekube-gate-v1-PlayerServerSwitchEvent)
+    - [ProxyEvent](#minekube-gate-v1-ProxyEvent)
+    - [ReadyEvent](#minekube-gate-v1-ReadyEvent)
     - [RegisterServerRequest](#minekube-gate-v1-RegisterServerRequest)
     - [RegisterServerResponse](#minekube-gate-v1-RegisterServerResponse)
     - [RemoveLiteRouteBackendRequest](#minekube-gate-v1-RemoveLiteRouteBackendRequest)
@@ -55,9 +62,13 @@ description: "Generated protocol documentation for Gate Minecraft proxy API. Com
     - [RequestCookieRequest](#minekube-gate-v1-RequestCookieRequest)
     - [RequestCookieResponse](#minekube-gate-v1-RequestCookieResponse)
     - [Server](#minekube-gate-v1-Server)
+    - [ServerRegisterEvent](#minekube-gate-v1-ServerRegisterEvent)
+    - [ServerUnregisterEvent](#minekube-gate-v1-ServerUnregisterEvent)
+    - [ShutdownEvent](#minekube-gate-v1-ShutdownEvent)
     - [StatusConfig](#minekube-gate-v1-StatusConfig)
     - [StoreCookieRequest](#minekube-gate-v1-StoreCookieRequest)
     - [StoreCookieResponse](#minekube-gate-v1-StoreCookieResponse)
+    - [StreamEventsRequest](#minekube-gate-v1-StreamEventsRequest)
     - [UnregisterServerRequest](#minekube-gate-v1-UnregisterServerRequest)
     - [UnregisterServerResponse](#minekube-gate-v1-UnregisterServerResponse)
     - [UpdateLiteRouteFallbackRequest](#minekube-gate-v1-UpdateLiteRouteFallbackRequest)
@@ -72,9 +83,13 @@ description: "Generated protocol documentation for Gate Minecraft proxy API. Com
     - [BedrockDeviceOS](#minekube-gate-v1-BedrockDeviceOS)
     - [BedrockInputMode](#minekube-gate-v1-BedrockInputMode)
     - [BedrockUIProfile](#minekube-gate-v1-BedrockUIProfile)
+    - [EventType](#minekube-gate-v1-EventType)
     - [LiteRouteStrategy](#minekube-gate-v1-LiteRouteStrategy)
+    - [LoginStatus](#minekube-gate-v1-LoginStatus)
     - [ProxyMode](#minekube-gate-v1-ProxyMode)
+    - [RouteOperation](#minekube-gate-v1-RouteOperation)
   
+    - [GateEventsService](#minekube-gate-v1-GateEventsService)
     - [GateLiteService](#minekube-gate-v1-GateLiteService)
     - [GateService](#minekube-gate-v1-GateService)
   
@@ -200,6 +215,23 @@ ClassicStats contains statistics for classic proxy mode.
 | ----- | ---- | ----- | ----------- |
 | players | [int32](#int32) |  | Number of online players |
 | servers | [int32](#int32) |  | Number of registered servers |
+
+
+
+
+
+
+<a name="minekube-gate-v1-ConfigUpdateEvent"></a>
+
+### ConfigUpdateEvent
+ConfigUpdateEvent fires when proxy configuration is updated.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| config_source | [string](#string) |  | config_source indicates how the config was updated. |
+| lite_mode_enabled | [bool](#bool) |  | lite_mode_enabled indicates if lite mode is enabled in the new config. |
+| route_count | [int32](#int32) |  | route_count is the number of lite routes configured (lite mode only). |
 
 
 
@@ -670,6 +702,23 @@ LiteRouteOptions captures proxy behaviour flags for a lite route.
 
 
 
+<a name="minekube-gate-v1-LiteRouteUpdateEvent"></a>
+
+### LiteRouteUpdateEvent
+LiteRouteUpdateEvent fires when lite mode routes are modified (lite mode only).
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | host is the hostname pattern of the updated route. |
+| operation | [RouteOperation](#minekube-gate-v1-RouteOperation) |  | operation describes what operation was performed on the route. |
+| backend_count | [int32](#int32) |  | backend_count is the current number of backends for this route. |
+
+
+
+
+
+
 <a name="minekube-gate-v1-LiteStats"></a>
 
 ### LiteStats
@@ -697,6 +746,101 @@ Player represents an online player on the proxy.
 | id | [string](#string) |  | The player&#39;s Minecraft UUID |
 | username | [string](#string) |  | The player&#39;s username |
 | bedrock | [BedrockPlayerData](#minekube-gate-v1-BedrockPlayerData) |  | Optional Bedrock player data (only present for Bedrock players) |
+
+
+
+
+
+
+<a name="minekube-gate-v1-PlayerConnectEvent"></a>
+
+### PlayerConnectEvent
+PlayerConnectEvent fires when a player connects to the proxy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| player_id | [string](#string) |  | player_id is the UUID of the connecting player. |
+| player_username | [string](#string) |  | player_username is the username of the connecting player. |
+| remote_address | [string](#string) |  | remote_address is the IP address the player connected from. |
+| protocol_version | [int32](#int32) |  | protocol_version is the Minecraft protocol version the player is using. |
+
+
+
+
+
+
+<a name="minekube-gate-v1-PlayerDisconnectEvent"></a>
+
+### PlayerDisconnectEvent
+PlayerDisconnectEvent fires when a player disconnects from the proxy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| player_id | [string](#string) |  | player_id is the UUID of the disconnecting player. |
+| player_username | [string](#string) |  | player_username is the username of the disconnecting player. |
+| reason | [string](#string) |  | reason is the disconnect reason if available. |
+| login_status | [LoginStatus](#minekube-gate-v1-LoginStatus) |  | login_status indicates the login state when the player disconnected. |
+
+
+
+
+
+
+<a name="minekube-gate-v1-PlayerServerSwitchEvent"></a>
+
+### PlayerServerSwitchEvent
+PlayerServerSwitchEvent fires when a player switches between servers.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| player_id | [string](#string) |  | player_id is the UUID of the player switching servers. |
+| player_username | [string](#string) |  | player_username is the username of the player switching servers. |
+| from_server | [string](#string) |  | from_server is the name of the server the player is leaving (empty if initial connect). |
+| to_server | [string](#string) |  | to_server is the name of the server the player is connecting to. |
+
+
+
+
+
+
+<a name="minekube-gate-v1-ProxyEvent"></a>
+
+### ProxyEvent
+ProxyEvent represents a single event occurrence with full details.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| event_type | [EventType](#minekube-gate-v1-EventType) |  | event_type indicates the type of event that occurred. |
+| timestamp_ms | [int64](#int64) |  | timestamp_ms is the Unix timestamp in milliseconds when the event occurred. |
+| player_connect | [PlayerConnectEvent](#minekube-gate-v1-PlayerConnectEvent) |  |  |
+| player_disconnect | [PlayerDisconnectEvent](#minekube-gate-v1-PlayerDisconnectEvent) |  |  |
+| player_server_switch | [PlayerServerSwitchEvent](#minekube-gate-v1-PlayerServerSwitchEvent) |  |  |
+| config_update | [ConfigUpdateEvent](#minekube-gate-v1-ConfigUpdateEvent) |  |  |
+| server_register | [ServerRegisterEvent](#minekube-gate-v1-ServerRegisterEvent) |  |  |
+| server_unregister | [ServerUnregisterEvent](#minekube-gate-v1-ServerUnregisterEvent) |  |  |
+| lite_route_update | [LiteRouteUpdateEvent](#minekube-gate-v1-LiteRouteUpdateEvent) |  |  |
+| ready | [ReadyEvent](#minekube-gate-v1-ReadyEvent) |  |  |
+| shutdown | [ShutdownEvent](#minekube-gate-v1-ShutdownEvent) |  |  |
+
+
+
+
+
+
+<a name="minekube-gate-v1-ReadyEvent"></a>
+
+### ReadyEvent
+ReadyEvent fires when the proxy is ready to accept connections.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| bind_address | [string](#string) |  | bind_address is the address the proxy is listening on. |
+| proxy_mode | [ProxyMode](#minekube-gate-v1-ProxyMode) |  | proxy_mode indicates whether the proxy is running in classic or lite mode. |
 
 
 
@@ -808,6 +952,53 @@ Server represents a backend server where Gate can connect players to.
 
 
 
+<a name="minekube-gate-v1-ServerRegisterEvent"></a>
+
+### ServerRegisterEvent
+ServerRegisterEvent fires when a new server is registered with the proxy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| server_name | [string](#string) |  | server_name is the name of the registered server. |
+| server_address | [string](#string) |  | server_address is the address of the registered server. |
+
+
+
+
+
+
+<a name="minekube-gate-v1-ServerUnregisterEvent"></a>
+
+### ServerUnregisterEvent
+ServerUnregisterEvent fires when a server is unregistered from the proxy.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| server_name | [string](#string) |  | server_name is the name of the unregistered server. |
+| server_address | [string](#string) |  | server_address is the address of the unregistered server. |
+
+
+
+
+
+
+<a name="minekube-gate-v1-ShutdownEvent"></a>
+
+### ShutdownEvent
+ShutdownEvent fires when the proxy begins shutting down.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| reason | [string](#string) |  | reason is the shutdown reason if available. |
+
+
+
+
+
+
 <a name="minekube-gate-v1-StatusConfig"></a>
 
 ### StatusConfig
@@ -848,6 +1039,23 @@ StoreCookieRequest is the request for StoreCookie method.
 
 ### StoreCookieResponse
 StoreCookieResponse is the response for StoreCookie method.
+
+
+
+
+
+
+<a name="minekube-gate-v1-StreamEventsRequest"></a>
+
+### StreamEventsRequest
+StreamEventsRequest configures the event stream subscription.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| event_types | [EventType](#minekube-gate-v1-EventType) | repeated | event_types filters which event types to receive. Empty means all events. |
+| include_system_events | [bool](#bool) |  | include_system_events determines if system events (config, server changes, ready, shutdown) are included. Default: true |
+| include_player_events | [bool](#bool) |  | include_player_events determines if player events (connect, disconnect, switch) are included. Default: true |
 
 
 
@@ -1065,6 +1273,26 @@ BedrockUIProfile represents the UI profile used by a Bedrock Edition player.
 
 
 
+<a name="minekube-gate-v1-EventType"></a>
+
+### EventType
+EventType represents the different types of events that can be streamed.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| EVENT_TYPE_UNSPECIFIED | 0 | EVENT_TYPE_UNSPECIFIED is the default value, not used for filtering. |
+| EVENT_TYPE_PLAYER_CONNECT | 1 | EVENT_TYPE_PLAYER_CONNECT fires when a player connects to the proxy. |
+| EVENT_TYPE_PLAYER_DISCONNECT | 2 | EVENT_TYPE_PLAYER_DISCONNECT fires when a player disconnects from the proxy. |
+| EVENT_TYPE_PLAYER_SERVER_SWITCH | 3 | EVENT_TYPE_PLAYER_SERVER_SWITCH fires when a player switches servers. |
+| EVENT_TYPE_CONFIG_UPDATE | 4 | EVENT_TYPE_CONFIG_UPDATE fires when proxy configuration is updated. |
+| EVENT_TYPE_SERVER_REGISTER | 5 | EVENT_TYPE_SERVER_REGISTER fires when a new server is registered. |
+| EVENT_TYPE_SERVER_UNREGISTER | 6 | EVENT_TYPE_SERVER_UNREGISTER fires when a server is unregistered. |
+| EVENT_TYPE_LITE_ROUTE_UPDATE | 7 | EVENT_TYPE_LITE_ROUTE_UPDATE fires when lite mode routes are modified (lite mode only). |
+| EVENT_TYPE_READY | 8 | EVENT_TYPE_READY fires when the proxy is ready to accept connections. |
+| EVENT_TYPE_SHUTDOWN | 9 | EVENT_TYPE_SHUTDOWN fires when the proxy begins shutting down. |
+
+
+
 <a name="minekube-gate-v1-LiteRouteStrategy"></a>
 
 ### LiteRouteStrategy
@@ -1081,6 +1309,22 @@ LiteRouteStrategy represents load balancing strategies for lite routes.
 
 
 
+<a name="minekube-gate-v1-LoginStatus"></a>
+
+### LoginStatus
+LoginStatus represents the login state when a player disconnected.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LOGIN_STATUS_UNSPECIFIED | 0 | LOGIN_STATUS_UNSPECIFIED is the default value. |
+| LOGIN_STATUS_SUCCESSFUL | 1 | LOGIN_STATUS_SUCCESSFUL indicates the player was successfully logged in. |
+| LOGIN_STATUS_CONFLICTING | 2 | LOGIN_STATUS_CONFLICTING indicates there was a login conflict. |
+| LOGIN_STATUS_CANCELED_BY_USER | 3 | LOGIN_STATUS_CANCELED_BY_USER indicates the user canceled the login. |
+| LOGIN_STATUS_CANCELED_BY_PROXY | 4 | LOGIN_STATUS_CANCELED_BY_PROXY indicates the proxy canceled the login. |
+| LOGIN_STATUS_CANCELED_BEFORE_COMPLETE | 5 | LOGIN_STATUS_CANCELED_BEFORE_COMPLETE indicates the login was canceled before completion. |
+
+
+
 <a name="minekube-gate-v1-ProxyMode"></a>
 
 ### ProxyMode
@@ -1093,9 +1337,37 @@ ProxyMode enumerates the current operating mode of Gate.
 | PROXY_MODE_LITE | 2 |  |
 
 
+
+<a name="minekube-gate-v1-RouteOperation"></a>
+
+### RouteOperation
+RouteOperation describes operations performed on lite routes.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| ROUTE_OPERATION_UNSPECIFIED | 0 | ROUTE_OPERATION_UNSPECIFIED is the default value. |
+| ROUTE_OPERATION_BACKEND_ADDED | 1 | ROUTE_OPERATION_BACKEND_ADDED indicates a backend was added to the route. |
+| ROUTE_OPERATION_BACKEND_REMOVED | 2 | ROUTE_OPERATION_BACKEND_REMOVED indicates a backend was removed from the route. |
+| ROUTE_OPERATION_STRATEGY_UPDATED | 3 | ROUTE_OPERATION_STRATEGY_UPDATED indicates the load balancing strategy was changed. |
+| ROUTE_OPERATION_OPTIONS_UPDATED | 4 | ROUTE_OPERATION_OPTIONS_UPDATED indicates route options were modified. |
+| ROUTE_OPERATION_FALLBACK_UPDATED | 5 | ROUTE_OPERATION_FALLBACK_UPDATED indicates fallback settings were modified. |
+
+
  
 
  
+
+
+<a name="minekube-gate-v1-GateEventsService"></a>
+
+### GateEventsService
+GateEventsService provides real-time event streaming for monitoring proxy activity.
+This service streams events as they occur, allowing external tools to monitor
+proxy state changes, player activities, and system events in real-time.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| StreamEvents | [StreamEventsRequest](#minekube-gate-v1-StreamEventsRequest) | [ProxyEvent](#minekube-gate-v1-ProxyEvent) stream | StreamEvents subscribes to real-time proxy events with optional filtering. The stream remains open until the client disconnects or an error occurs. This is a server streaming RPC where the client sends one request and receives multiple events. |
 
 
 <a name="minekube-gate-v1-GateLiteService"></a>

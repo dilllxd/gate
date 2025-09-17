@@ -25,6 +25,8 @@ const (
 	GateServiceName = "minekube.gate.v1.GateService"
 	// GateLiteServiceName is the fully-qualified name of the GateLiteService service.
 	GateLiteServiceName = "minekube.gate.v1.GateLiteService"
+	// GateEventsServiceName is the fully-qualified name of the GateEventsService service.
+	GateEventsServiceName = "minekube.gate.v1.GateEventsService"
 )
 
 // These constants are the fully-qualified names of the RPCs defined in this package. They're
@@ -88,6 +90,9 @@ const (
 	// GateLiteServiceUpdateLiteRouteFallbackProcedure is the fully-qualified name of the
 	// GateLiteService's UpdateLiteRouteFallback RPC.
 	GateLiteServiceUpdateLiteRouteFallbackProcedure = "/minekube.gate.v1.GateLiteService/UpdateLiteRouteFallback"
+	// GateEventsServiceStreamEventsProcedure is the fully-qualified name of the GateEventsService's
+	// StreamEvents RPC.
+	GateEventsServiceStreamEventsProcedure = "/minekube.gate.v1.GateEventsService/StreamEvents"
 )
 
 // GateServiceClient is a client for the minekube.gate.v1.GateService service.
@@ -764,4 +769,80 @@ func (UnimplementedGateLiteServiceHandler) UpdateLiteRouteOptions(context.Contex
 
 func (UnimplementedGateLiteServiceHandler) UpdateLiteRouteFallback(context.Context, *connect.Request[v1.UpdateLiteRouteFallbackRequest]) (*connect.Response[v1.UpdateLiteRouteFallbackResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("minekube.gate.v1.GateLiteService.UpdateLiteRouteFallback is not implemented"))
+}
+
+// GateEventsServiceClient is a client for the minekube.gate.v1.GateEventsService service.
+type GateEventsServiceClient interface {
+	// StreamEvents subscribes to real-time proxy events with optional filtering.
+	// The stream remains open until the client disconnects or an error occurs.
+	// This is a server streaming RPC where the client sends one request and receives multiple events.
+	StreamEvents(context.Context, *connect.Request[v1.StreamEventsRequest]) (*connect.ServerStreamForClient[v1.ProxyEvent], error)
+}
+
+// NewGateEventsServiceClient constructs a client for the minekube.gate.v1.GateEventsService
+// service. By default, it uses the Connect protocol with the binary Protobuf Codec, asks for
+// gzipped responses, and sends uncompressed requests. To use the gRPC or gRPC-Web protocols, supply
+// the connect.WithGRPC() or connect.WithGRPCWeb() options.
+//
+// The URL supplied here should be the base URL for the Connect or gRPC server (for example,
+// http://api.acme.com or https://acme.com/grpc).
+func NewGateEventsServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) GateEventsServiceClient {
+	baseURL = strings.TrimRight(baseURL, "/")
+	gateEventsServiceMethods := v1.File_minekube_gate_v1_gate_service_proto.Services().ByName("GateEventsService").Methods()
+	return &gateEventsServiceClient{
+		streamEvents: connect.NewClient[v1.StreamEventsRequest, v1.ProxyEvent](
+			httpClient,
+			baseURL+GateEventsServiceStreamEventsProcedure,
+			connect.WithSchema(gateEventsServiceMethods.ByName("StreamEvents")),
+			connect.WithClientOptions(opts...),
+		),
+	}
+}
+
+// gateEventsServiceClient implements GateEventsServiceClient.
+type gateEventsServiceClient struct {
+	streamEvents *connect.Client[v1.StreamEventsRequest, v1.ProxyEvent]
+}
+
+// StreamEvents calls minekube.gate.v1.GateEventsService.StreamEvents.
+func (c *gateEventsServiceClient) StreamEvents(ctx context.Context, req *connect.Request[v1.StreamEventsRequest]) (*connect.ServerStreamForClient[v1.ProxyEvent], error) {
+	return c.streamEvents.CallServerStream(ctx, req)
+}
+
+// GateEventsServiceHandler is an implementation of the minekube.gate.v1.GateEventsService service.
+type GateEventsServiceHandler interface {
+	// StreamEvents subscribes to real-time proxy events with optional filtering.
+	// The stream remains open until the client disconnects or an error occurs.
+	// This is a server streaming RPC where the client sends one request and receives multiple events.
+	StreamEvents(context.Context, *connect.Request[v1.StreamEventsRequest], *connect.ServerStream[v1.ProxyEvent]) error
+}
+
+// NewGateEventsServiceHandler builds an HTTP handler from the service implementation. It returns
+// the path on which to mount the handler and the handler itself.
+//
+// By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
+// and JSON codecs. They also support gzip compression.
+func NewGateEventsServiceHandler(svc GateEventsServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	gateEventsServiceMethods := v1.File_minekube_gate_v1_gate_service_proto.Services().ByName("GateEventsService").Methods()
+	gateEventsServiceStreamEventsHandler := connect.NewServerStreamHandler(
+		GateEventsServiceStreamEventsProcedure,
+		svc.StreamEvents,
+		connect.WithSchema(gateEventsServiceMethods.ByName("StreamEvents")),
+		connect.WithHandlerOptions(opts...),
+	)
+	return "/minekube.gate.v1.GateEventsService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case GateEventsServiceStreamEventsProcedure:
+			gateEventsServiceStreamEventsHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	})
+}
+
+// UnimplementedGateEventsServiceHandler returns CodeUnimplemented from all methods.
+type UnimplementedGateEventsServiceHandler struct{}
+
+func (UnimplementedGateEventsServiceHandler) StreamEvents(context.Context, *connect.Request[v1.StreamEventsRequest], *connect.ServerStream[v1.ProxyEvent]) error {
+	return connect.NewError(connect.CodeUnimplemented, errors.New("minekube.gate.v1.GateEventsService.StreamEvents is not implemented"))
 }

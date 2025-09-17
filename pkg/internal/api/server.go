@@ -43,6 +43,9 @@ func (s *Server) Start(ctx context.Context) error {
 	if liteHandler, ok := s.h.(gatev1connect.GateLiteServiceHandler); ok {
 		mux.Handle(gatev1connect.NewGateLiteServiceHandler(liteHandler, connect.WithInterceptors(otelInterceptor)))
 	}
+	if eventsHandler, ok := s.h.(gatev1connect.GateEventsServiceHandler); ok {
+		mux.Handle(gatev1connect.NewGateEventsServiceHandler(eventsHandler, connect.WithInterceptors(otelInterceptor)))
+	}
 
 	hs := &http.Server{
 		Addr: s.cfg.Bind,

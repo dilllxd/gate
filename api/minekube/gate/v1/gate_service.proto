@@ -91,6 +91,16 @@ service GateLiteService {
   rpc UpdateLiteRouteFallback(UpdateLiteRouteFallbackRequest) returns (UpdateLiteRouteFallbackResponse);
 }
 
+// GateEventsService provides real-time event streaming for monitoring proxy activity.
+// This service streams events as they occur, allowing external tools to monitor
+// proxy state changes, player activities, and system events in real-time.
+service GateEventsService {
+  // StreamEvents subscribes to real-time proxy events with optional filtering.
+  // The stream remains open until the client disconnects or an error occurs.
+  // This is a server streaming RPC where the client sends one request and receives multiple events.
+  rpc StreamEvents(StreamEventsRequest) returns (stream ProxyEvent);
+}
+
 // StoreCookieRequest is the request for StoreCookie method.
 message StoreCookieRequest {
   // The player's username or ID
@@ -613,4 +623,178 @@ message UpdateLiteRouteFallbackRequest {
 // UpdateLiteRouteFallbackResponse contains validation warnings.
 message UpdateLiteRouteFallbackResponse {
   repeated string warnings = 1;
+}
+
+// EventType represents the different types of events that can be streamed.
+enum EventType {
+  // EVENT_TYPE_UNSPECIFIED is the default value, not used for filtering.
+  EVENT_TYPE_UNSPECIFIED = 0;
+  // EVENT_TYPE_PLAYER_CONNECT fires when a player connects to the proxy.
+  EVENT_TYPE_PLAYER_CONNECT = 1;
+  // EVENT_TYPE_PLAYER_DISCONNECT fires when a player disconnects from the proxy.
+  EVENT_TYPE_PLAYER_DISCONNECT = 2;
+  // EVENT_TYPE_PLAYER_SERVER_SWITCH fires when a player switches servers.
+  EVENT_TYPE_PLAYER_SERVER_SWITCH = 3;
+  // EVENT_TYPE_CONFIG_UPDATE fires when proxy configuration is updated.
+  EVENT_TYPE_CONFIG_UPDATE = 4;
+  // EVENT_TYPE_SERVER_REGISTER fires when a new server is registered.
+  EVENT_TYPE_SERVER_REGISTER = 5;
+  // EVENT_TYPE_SERVER_UNREGISTER fires when a server is unregistered.
+  EVENT_TYPE_SERVER_UNREGISTER = 6;
+  // EVENT_TYPE_LITE_ROUTE_UPDATE fires when lite mode routes are modified (lite mode only).
+  EVENT_TYPE_LITE_ROUTE_UPDATE = 7;
+  // EVENT_TYPE_READY fires when the proxy is ready to accept connections.
+  EVENT_TYPE_READY = 8;
+  // EVENT_TYPE_SHUTDOWN fires when the proxy begins shutting down.
+  EVENT_TYPE_SHUTDOWN = 9;
+}
+
+// StreamEventsRequest configures the event stream subscription.
+message StreamEventsRequest {
+  // event_types filters which event types to receive. Empty means all events.
+  repeated EventType event_types = 1;
+  // include_system_events determines if system events (config, server changes, ready, shutdown) are included.
+  // Default: true
+  bool include_system_events = 2;
+  // include_player_events determines if player events (connect, disconnect, switch) are included.
+  // Default: true
+  bool include_player_events = 3;
+}
+
+// ProxyEvent represents a single event occurrence with full details.
+message ProxyEvent {
+  // event_type indicates the type of event that occurred.
+  EventType event_type = 1;
+  // timestamp_ms is the Unix timestamp in milliseconds when the event occurred.
+  int64 timestamp_ms = 2;
+  // event_data contains the specific event payload, varies by event_type.
+  oneof event_data {
+    PlayerConnectEvent player_connect = 10;
+    PlayerDisconnectEvent player_disconnect = 11;
+    PlayerServerSwitchEvent player_server_switch = 12;
+    ConfigUpdateEvent config_update = 13;
+    ServerRegisterEvent server_register = 14;
+    ServerUnregisterEvent server_unregister = 15;
+    LiteRouteUpdateEvent lite_route_update = 16;
+    ReadyEvent ready = 17;
+    ShutdownEvent shutdown = 18;
+  }
+}
+
+// PlayerConnectEvent fires when a player connects to the proxy.
+message PlayerConnectEvent {
+  // player_id is the UUID of the connecting player.
+  string player_id = 1;
+  // player_username is the username of the connecting player.
+  string player_username = 2;
+  // remote_address is the IP address the player connected from.
+  string remote_address = 3;
+  // protocol_version is the Minecraft protocol version the player is using.
+  int32 protocol_version = 4;
+}
+
+// PlayerDisconnectEvent fires when a player disconnects from the proxy.
+message PlayerDisconnectEvent {
+  // player_id is the UUID of the disconnecting player.
+  string player_id = 1;
+  // player_username is the username of the disconnecting player.
+  string player_username = 2;
+  // reason is the disconnect reason if available.
+  string reason = 3;
+  // login_status indicates the login state when the player disconnected.
+  LoginStatus login_status = 4;
+}
+
+// LoginStatus represents the login state when a player disconnected.
+enum LoginStatus {
+  // LOGIN_STATUS_UNSPECIFIED is the default value.
+  LOGIN_STATUS_UNSPECIFIED = 0;
+  // LOGIN_STATUS_SUCCESSFUL indicates the player was successfully logged in.
+  LOGIN_STATUS_SUCCESSFUL = 1;
+  // LOGIN_STATUS_CONFLICTING indicates there was a login conflict.
+  LOGIN_STATUS_CONFLICTING = 2;
+  // LOGIN_STATUS_CANCELED_BY_USER indicates the user canceled the login.
+  LOGIN_STATUS_CANCELED_BY_USER = 3;
+  // LOGIN_STATUS_CANCELED_BY_PROXY indicates the proxy canceled the login.
+  LOGIN_STATUS_CANCELED_BY_PROXY = 4;
+  // LOGIN_STATUS_CANCELED_BEFORE_COMPLETE indicates the login was canceled before completion.
+  LOGIN_STATUS_CANCELED_BEFORE_COMPLETE = 5;
+}
+
+// PlayerServerSwitchEvent fires when a player switches between servers.
+message PlayerServerSwitchEvent {
+  // player_id is the UUID of the player switching servers.
+  string player_id = 1;
+  // player_username is the username of the player switching servers.
+  string player_username = 2;
+  // from_server is the name of the server the player is leaving (empty if initial connect).
+  string from_server = 3;
+  // to_server is the name of the server the player is connecting to.
+  string to_server = 4;
+}
+
+// ConfigUpdateEvent fires when proxy configuration is updated.
+message ConfigUpdateEvent {
+  // config_source indicates how the config was updated.
+  string config_source = 1;
+  // lite_mode_enabled indicates if lite mode is enabled in the new config.
+  bool lite_mode_enabled = 2;
+  // route_count is the number of lite routes configured (lite mode only).
+  int32 route_count = 3;
+}
+
+// ServerRegisterEvent fires when a new server is registered with the proxy.
+message ServerRegisterEvent {
+  // server_name is the name of the registered server.
+  string server_name = 1;
+  // server_address is the address of the registered server.
+  string server_address = 2;
+}
+
+// ServerUnregisterEvent fires when a server is unregistered from the proxy.
+message ServerUnregisterEvent {
+  // server_name is the name of the unregistered server.
+  string server_name = 1;
+  // server_address is the address of the unregistered server.
+  string server_address = 2;
+}
+
+// LiteRouteUpdateEvent fires when lite mode routes are modified (lite mode only).
+message LiteRouteUpdateEvent {
+  // host is the hostname pattern of the updated route.
+  string host = 1;
+  // operation describes what operation was performed on the route.
+  RouteOperation operation = 2;
+  // backend_count is the current number of backends for this route.
+  int32 backend_count = 3;
+}
+
+// RouteOperation describes operations performed on lite routes.
+enum RouteOperation {
+  // ROUTE_OPERATION_UNSPECIFIED is the default value.
+  ROUTE_OPERATION_UNSPECIFIED = 0;
+  // ROUTE_OPERATION_BACKEND_ADDED indicates a backend was added to the route.
+  ROUTE_OPERATION_BACKEND_ADDED = 1;
+  // ROUTE_OPERATION_BACKEND_REMOVED indicates a backend was removed from the route.
+  ROUTE_OPERATION_BACKEND_REMOVED = 2;
+  // ROUTE_OPERATION_STRATEGY_UPDATED indicates the load balancing strategy was changed.
+  ROUTE_OPERATION_STRATEGY_UPDATED = 3;
+  // ROUTE_OPERATION_OPTIONS_UPDATED indicates route options were modified.
+  ROUTE_OPERATION_OPTIONS_UPDATED = 4;
+  // ROUTE_OPERATION_FALLBACK_UPDATED indicates fallback settings were modified.
+  ROUTE_OPERATION_FALLBACK_UPDATED = 5;
+}
+
+// ReadyEvent fires when the proxy is ready to accept connections.
+message ReadyEvent {
+  // bind_address is the address the proxy is listening on.
+  string bind_address = 1;
+  // proxy_mode indicates whether the proxy is running in classic or lite mode.
+  ProxyMode proxy_mode = 2;
+}
+
+// ShutdownEvent fires when the proxy begins shutting down.
+message ShutdownEvent {
+  // reason is the shutdown reason if available.
+  string reason = 1;
 }

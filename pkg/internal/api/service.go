@@ -37,11 +37,17 @@ type LiteHandler interface {
 	UpdateLiteRouteFallback(context.Context, *pb.UpdateLiteRouteFallbackRequest) ([]string, error)
 }
 
-func NewService(p *proxy.Proxy, configHandler ConfigHandler, liteHandler LiteHandler) *Service {
+// EventsHandler defines methods for real-time event streaming
+type EventsHandler interface {
+	StreamEvents(context.Context, *connect.Request[pb.StreamEventsRequest], *connect.ServerStream[pb.ProxyEvent]) error
+}
+
+func NewService(p *proxy.Proxy, configHandler ConfigHandler, liteHandler LiteHandler, eventsHandler EventsHandler) *Service {
 	return &Service{
 		p:             p,
 		configHandler: configHandler,
 		liteHandler:   liteHandler,
+		eventsHandler: eventsHandler,
 	}
 }
 
@@ -52,12 +58,14 @@ type (
 		p             *proxy.Proxy
 		configHandler ConfigHandler
 		liteHandler   LiteHandler
+		eventsHandler EventsHandler
 	}
 )
 
 var (
-	_ Handler                              = (*Service)(nil)
-	_ gatev1connect.GateLiteServiceHandler = (*Service)(nil)
+	_ Handler                                = (*Service)(nil)
+	_ gatev1connect.GateLiteServiceHandler   = (*Service)(nil)
+	_ gatev1connect.GateEventsServiceHandler = (*Service)(nil)
 )
 
 func (s *Service) ListPlayers(ctx context.Context, c *connect.Request[pb.ListPlayersRequest]) (*connect.Response[pb.ListPlayersResponse], error) {
@@ -387,4 +395,12 @@ func (s *Service) UpdateLiteRouteFallback(ctx context.Context, c *connect.Reques
 		return nil, err
 	}
 	return connect.NewResponse(&pb.UpdateLiteRouteFallbackResponse{Warnings: warns}), nil
+}
+
+// StreamEvents delegates to the events handler for real-time event streaming
+func (s *Service) StreamEvents(ctx context.Context, req *connect.Request[pb.StreamEventsRequest], stream *connect.ServerStream[pb.ProxyEvent]) error {
+	if s.eventsHandler == nil {
+		return connect.NewError(connect.CodeUnimplemented, errors.New("events handler not configured"))
+	}
+	return s.eventsHandler.StreamEvents(ctx, req, stream)
 }

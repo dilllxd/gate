@@ -333,6 +333,217 @@ func (LiteRouteStrategy) EnumDescriptor() ([]byte, []int) {
 	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{4}
 }
 
+// EventType represents the different types of events that can be streamed.
+type EventType int32
+
+const (
+	// EVENT_TYPE_UNSPECIFIED is the default value, not used for filtering.
+	EventType_EVENT_TYPE_UNSPECIFIED EventType = 0
+	// EVENT_TYPE_PLAYER_CONNECT fires when a player connects to the proxy.
+	EventType_EVENT_TYPE_PLAYER_CONNECT EventType = 1
+	// EVENT_TYPE_PLAYER_DISCONNECT fires when a player disconnects from the proxy.
+	EventType_EVENT_TYPE_PLAYER_DISCONNECT EventType = 2
+	// EVENT_TYPE_PLAYER_SERVER_SWITCH fires when a player switches servers.
+	EventType_EVENT_TYPE_PLAYER_SERVER_SWITCH EventType = 3
+	// EVENT_TYPE_CONFIG_UPDATE fires when proxy configuration is updated.
+	EventType_EVENT_TYPE_CONFIG_UPDATE EventType = 4
+	// EVENT_TYPE_SERVER_REGISTER fires when a new server is registered.
+	EventType_EVENT_TYPE_SERVER_REGISTER EventType = 5
+	// EVENT_TYPE_SERVER_UNREGISTER fires when a server is unregistered.
+	EventType_EVENT_TYPE_SERVER_UNREGISTER EventType = 6
+	// EVENT_TYPE_LITE_ROUTE_UPDATE fires when lite mode routes are modified (lite mode only).
+	EventType_EVENT_TYPE_LITE_ROUTE_UPDATE EventType = 7
+	// EVENT_TYPE_READY fires when the proxy is ready to accept connections.
+	EventType_EVENT_TYPE_READY EventType = 8
+	// EVENT_TYPE_SHUTDOWN fires when the proxy begins shutting down.
+	EventType_EVENT_TYPE_SHUTDOWN EventType = 9
+)
+
+// Enum value maps for EventType.
+var (
+	EventType_name = map[int32]string{
+		0: "EVENT_TYPE_UNSPECIFIED",
+		1: "EVENT_TYPE_PLAYER_CONNECT",
+		2: "EVENT_TYPE_PLAYER_DISCONNECT",
+		3: "EVENT_TYPE_PLAYER_SERVER_SWITCH",
+		4: "EVENT_TYPE_CONFIG_UPDATE",
+		5: "EVENT_TYPE_SERVER_REGISTER",
+		6: "EVENT_TYPE_SERVER_UNREGISTER",
+		7: "EVENT_TYPE_LITE_ROUTE_UPDATE",
+		8: "EVENT_TYPE_READY",
+		9: "EVENT_TYPE_SHUTDOWN",
+	}
+	EventType_value = map[string]int32{
+		"EVENT_TYPE_UNSPECIFIED":          0,
+		"EVENT_TYPE_PLAYER_CONNECT":       1,
+		"EVENT_TYPE_PLAYER_DISCONNECT":    2,
+		"EVENT_TYPE_PLAYER_SERVER_SWITCH": 3,
+		"EVENT_TYPE_CONFIG_UPDATE":        4,
+		"EVENT_TYPE_SERVER_REGISTER":      5,
+		"EVENT_TYPE_SERVER_UNREGISTER":    6,
+		"EVENT_TYPE_LITE_ROUTE_UPDATE":    7,
+		"EVENT_TYPE_READY":                8,
+		"EVENT_TYPE_SHUTDOWN":             9,
+	}
+)
+
+func (x EventType) Enum() *EventType {
+	p := new(EventType)
+	*p = x
+	return p
+}
+
+func (x EventType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (EventType) Descriptor() protoreflect.EnumDescriptor {
+	return file_minekube_gate_v1_gate_service_proto_enumTypes[5].Descriptor()
+}
+
+func (EventType) Type() protoreflect.EnumType {
+	return &file_minekube_gate_v1_gate_service_proto_enumTypes[5]
+}
+
+func (x EventType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use EventType.Descriptor instead.
+func (EventType) EnumDescriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{5}
+}
+
+// LoginStatus represents the login state when a player disconnected.
+type LoginStatus int32
+
+const (
+	// LOGIN_STATUS_UNSPECIFIED is the default value.
+	LoginStatus_LOGIN_STATUS_UNSPECIFIED LoginStatus = 0
+	// LOGIN_STATUS_SUCCESSFUL indicates the player was successfully logged in.
+	LoginStatus_LOGIN_STATUS_SUCCESSFUL LoginStatus = 1
+	// LOGIN_STATUS_CONFLICTING indicates there was a login conflict.
+	LoginStatus_LOGIN_STATUS_CONFLICTING LoginStatus = 2
+	// LOGIN_STATUS_CANCELED_BY_USER indicates the user canceled the login.
+	LoginStatus_LOGIN_STATUS_CANCELED_BY_USER LoginStatus = 3
+	// LOGIN_STATUS_CANCELED_BY_PROXY indicates the proxy canceled the login.
+	LoginStatus_LOGIN_STATUS_CANCELED_BY_PROXY LoginStatus = 4
+	// LOGIN_STATUS_CANCELED_BEFORE_COMPLETE indicates the login was canceled before completion.
+	LoginStatus_LOGIN_STATUS_CANCELED_BEFORE_COMPLETE LoginStatus = 5
+)
+
+// Enum value maps for LoginStatus.
+var (
+	LoginStatus_name = map[int32]string{
+		0: "LOGIN_STATUS_UNSPECIFIED",
+		1: "LOGIN_STATUS_SUCCESSFUL",
+		2: "LOGIN_STATUS_CONFLICTING",
+		3: "LOGIN_STATUS_CANCELED_BY_USER",
+		4: "LOGIN_STATUS_CANCELED_BY_PROXY",
+		5: "LOGIN_STATUS_CANCELED_BEFORE_COMPLETE",
+	}
+	LoginStatus_value = map[string]int32{
+		"LOGIN_STATUS_UNSPECIFIED":              0,
+		"LOGIN_STATUS_SUCCESSFUL":               1,
+		"LOGIN_STATUS_CONFLICTING":              2,
+		"LOGIN_STATUS_CANCELED_BY_USER":         3,
+		"LOGIN_STATUS_CANCELED_BY_PROXY":        4,
+		"LOGIN_STATUS_CANCELED_BEFORE_COMPLETE": 5,
+	}
+)
+
+func (x LoginStatus) Enum() *LoginStatus {
+	p := new(LoginStatus)
+	*p = x
+	return p
+}
+
+func (x LoginStatus) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LoginStatus) Descriptor() protoreflect.EnumDescriptor {
+	return file_minekube_gate_v1_gate_service_proto_enumTypes[6].Descriptor()
+}
+
+func (LoginStatus) Type() protoreflect.EnumType {
+	return &file_minekube_gate_v1_gate_service_proto_enumTypes[6]
+}
+
+func (x LoginStatus) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LoginStatus.Descriptor instead.
+func (LoginStatus) EnumDescriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{6}
+}
+
+// RouteOperation describes operations performed on lite routes.
+type RouteOperation int32
+
+const (
+	// ROUTE_OPERATION_UNSPECIFIED is the default value.
+	RouteOperation_ROUTE_OPERATION_UNSPECIFIED RouteOperation = 0
+	// ROUTE_OPERATION_BACKEND_ADDED indicates a backend was added to the route.
+	RouteOperation_ROUTE_OPERATION_BACKEND_ADDED RouteOperation = 1
+	// ROUTE_OPERATION_BACKEND_REMOVED indicates a backend was removed from the route.
+	RouteOperation_ROUTE_OPERATION_BACKEND_REMOVED RouteOperation = 2
+	// ROUTE_OPERATION_STRATEGY_UPDATED indicates the load balancing strategy was changed.
+	RouteOperation_ROUTE_OPERATION_STRATEGY_UPDATED RouteOperation = 3
+	// ROUTE_OPERATION_OPTIONS_UPDATED indicates route options were modified.
+	RouteOperation_ROUTE_OPERATION_OPTIONS_UPDATED RouteOperation = 4
+	// ROUTE_OPERATION_FALLBACK_UPDATED indicates fallback settings were modified.
+	RouteOperation_ROUTE_OPERATION_FALLBACK_UPDATED RouteOperation = 5
+)
+
+// Enum value maps for RouteOperation.
+var (
+	RouteOperation_name = map[int32]string{
+		0: "ROUTE_OPERATION_UNSPECIFIED",
+		1: "ROUTE_OPERATION_BACKEND_ADDED",
+		2: "ROUTE_OPERATION_BACKEND_REMOVED",
+		3: "ROUTE_OPERATION_STRATEGY_UPDATED",
+		4: "ROUTE_OPERATION_OPTIONS_UPDATED",
+		5: "ROUTE_OPERATION_FALLBACK_UPDATED",
+	}
+	RouteOperation_value = map[string]int32{
+		"ROUTE_OPERATION_UNSPECIFIED":      0,
+		"ROUTE_OPERATION_BACKEND_ADDED":    1,
+		"ROUTE_OPERATION_BACKEND_REMOVED":  2,
+		"ROUTE_OPERATION_STRATEGY_UPDATED": 3,
+		"ROUTE_OPERATION_OPTIONS_UPDATED":  4,
+		"ROUTE_OPERATION_FALLBACK_UPDATED": 5,
+	}
+)
+
+func (x RouteOperation) Enum() *RouteOperation {
+	p := new(RouteOperation)
+	*p = x
+	return p
+}
+
+func (x RouteOperation) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RouteOperation) Descriptor() protoreflect.EnumDescriptor {
+	return file_minekube_gate_v1_gate_service_proto_enumTypes[7].Descriptor()
+}
+
+func (RouteOperation) Type() protoreflect.EnumType {
+	return &file_minekube_gate_v1_gate_service_proto_enumTypes[7]
+}
+
+func (x RouteOperation) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RouteOperation.Descriptor instead.
+func (RouteOperation) EnumDescriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{7}
+}
+
 // StoreCookieRequest is the request for StoreCookie method.
 type StoreCookieRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -3556,6 +3767,845 @@ func (x *UpdateLiteRouteFallbackResponse) GetWarnings() []string {
 	return nil
 }
 
+// StreamEventsRequest configures the event stream subscription.
+type StreamEventsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// event_types filters which event types to receive. Empty means all events.
+	EventTypes []EventType `protobuf:"varint,1,rep,packed,name=event_types,json=eventTypes,proto3,enum=minekube.gate.v1.EventType" json:"event_types,omitempty"`
+	// include_system_events determines if system events (config, server changes, ready, shutdown) are included.
+	// Default: true
+	IncludeSystemEvents bool `protobuf:"varint,2,opt,name=include_system_events,json=includeSystemEvents,proto3" json:"include_system_events,omitempty"`
+	// include_player_events determines if player events (connect, disconnect, switch) are included.
+	// Default: true
+	IncludePlayerEvents bool `protobuf:"varint,3,opt,name=include_player_events,json=includePlayerEvents,proto3" json:"include_player_events,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *StreamEventsRequest) Reset() {
+	*x = StreamEventsRequest{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[58]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StreamEventsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StreamEventsRequest) ProtoMessage() {}
+
+func (x *StreamEventsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[58]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StreamEventsRequest.ProtoReflect.Descriptor instead.
+func (*StreamEventsRequest) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{58}
+}
+
+func (x *StreamEventsRequest) GetEventTypes() []EventType {
+	if x != nil {
+		return x.EventTypes
+	}
+	return nil
+}
+
+func (x *StreamEventsRequest) GetIncludeSystemEvents() bool {
+	if x != nil {
+		return x.IncludeSystemEvents
+	}
+	return false
+}
+
+func (x *StreamEventsRequest) GetIncludePlayerEvents() bool {
+	if x != nil {
+		return x.IncludePlayerEvents
+	}
+	return false
+}
+
+// ProxyEvent represents a single event occurrence with full details.
+type ProxyEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// event_type indicates the type of event that occurred.
+	EventType EventType `protobuf:"varint,1,opt,name=event_type,json=eventType,proto3,enum=minekube.gate.v1.EventType" json:"event_type,omitempty"`
+	// timestamp_ms is the Unix timestamp in milliseconds when the event occurred.
+	TimestampMs int64 `protobuf:"varint,2,opt,name=timestamp_ms,json=timestampMs,proto3" json:"timestamp_ms,omitempty"`
+	// event_data contains the specific event payload, varies by event_type.
+	//
+	// Types that are valid to be assigned to EventData:
+	//
+	//	*ProxyEvent_PlayerConnect
+	//	*ProxyEvent_PlayerDisconnect
+	//	*ProxyEvent_PlayerServerSwitch
+	//	*ProxyEvent_ConfigUpdate
+	//	*ProxyEvent_ServerRegister
+	//	*ProxyEvent_ServerUnregister
+	//	*ProxyEvent_LiteRouteUpdate
+	//	*ProxyEvent_Ready
+	//	*ProxyEvent_Shutdown
+	EventData     isProxyEvent_EventData `protobuf_oneof:"event_data"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProxyEvent) Reset() {
+	*x = ProxyEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[59]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProxyEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProxyEvent) ProtoMessage() {}
+
+func (x *ProxyEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[59]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProxyEvent.ProtoReflect.Descriptor instead.
+func (*ProxyEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{59}
+}
+
+func (x *ProxyEvent) GetEventType() EventType {
+	if x != nil {
+		return x.EventType
+	}
+	return EventType_EVENT_TYPE_UNSPECIFIED
+}
+
+func (x *ProxyEvent) GetTimestampMs() int64 {
+	if x != nil {
+		return x.TimestampMs
+	}
+	return 0
+}
+
+func (x *ProxyEvent) GetEventData() isProxyEvent_EventData {
+	if x != nil {
+		return x.EventData
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetPlayerConnect() *PlayerConnectEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_PlayerConnect); ok {
+			return x.PlayerConnect
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetPlayerDisconnect() *PlayerDisconnectEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_PlayerDisconnect); ok {
+			return x.PlayerDisconnect
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetPlayerServerSwitch() *PlayerServerSwitchEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_PlayerServerSwitch); ok {
+			return x.PlayerServerSwitch
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetConfigUpdate() *ConfigUpdateEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_ConfigUpdate); ok {
+			return x.ConfigUpdate
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetServerRegister() *ServerRegisterEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_ServerRegister); ok {
+			return x.ServerRegister
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetServerUnregister() *ServerUnregisterEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_ServerUnregister); ok {
+			return x.ServerUnregister
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetLiteRouteUpdate() *LiteRouteUpdateEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_LiteRouteUpdate); ok {
+			return x.LiteRouteUpdate
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetReady() *ReadyEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_Ready); ok {
+			return x.Ready
+		}
+	}
+	return nil
+}
+
+func (x *ProxyEvent) GetShutdown() *ShutdownEvent {
+	if x != nil {
+		if x, ok := x.EventData.(*ProxyEvent_Shutdown); ok {
+			return x.Shutdown
+		}
+	}
+	return nil
+}
+
+type isProxyEvent_EventData interface {
+	isProxyEvent_EventData()
+}
+
+type ProxyEvent_PlayerConnect struct {
+	PlayerConnect *PlayerConnectEvent `protobuf:"bytes,10,opt,name=player_connect,json=playerConnect,proto3,oneof"`
+}
+
+type ProxyEvent_PlayerDisconnect struct {
+	PlayerDisconnect *PlayerDisconnectEvent `protobuf:"bytes,11,opt,name=player_disconnect,json=playerDisconnect,proto3,oneof"`
+}
+
+type ProxyEvent_PlayerServerSwitch struct {
+	PlayerServerSwitch *PlayerServerSwitchEvent `protobuf:"bytes,12,opt,name=player_server_switch,json=playerServerSwitch,proto3,oneof"`
+}
+
+type ProxyEvent_ConfigUpdate struct {
+	ConfigUpdate *ConfigUpdateEvent `protobuf:"bytes,13,opt,name=config_update,json=configUpdate,proto3,oneof"`
+}
+
+type ProxyEvent_ServerRegister struct {
+	ServerRegister *ServerRegisterEvent `protobuf:"bytes,14,opt,name=server_register,json=serverRegister,proto3,oneof"`
+}
+
+type ProxyEvent_ServerUnregister struct {
+	ServerUnregister *ServerUnregisterEvent `protobuf:"bytes,15,opt,name=server_unregister,json=serverUnregister,proto3,oneof"`
+}
+
+type ProxyEvent_LiteRouteUpdate struct {
+	LiteRouteUpdate *LiteRouteUpdateEvent `protobuf:"bytes,16,opt,name=lite_route_update,json=liteRouteUpdate,proto3,oneof"`
+}
+
+type ProxyEvent_Ready struct {
+	Ready *ReadyEvent `protobuf:"bytes,17,opt,name=ready,proto3,oneof"`
+}
+
+type ProxyEvent_Shutdown struct {
+	Shutdown *ShutdownEvent `protobuf:"bytes,18,opt,name=shutdown,proto3,oneof"`
+}
+
+func (*ProxyEvent_PlayerConnect) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_PlayerDisconnect) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_PlayerServerSwitch) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_ConfigUpdate) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_ServerRegister) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_ServerUnregister) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_LiteRouteUpdate) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_Ready) isProxyEvent_EventData() {}
+
+func (*ProxyEvent_Shutdown) isProxyEvent_EventData() {}
+
+// PlayerConnectEvent fires when a player connects to the proxy.
+type PlayerConnectEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// player_id is the UUID of the connecting player.
+	PlayerId string `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	// player_username is the username of the connecting player.
+	PlayerUsername string `protobuf:"bytes,2,opt,name=player_username,json=playerUsername,proto3" json:"player_username,omitempty"`
+	// remote_address is the IP address the player connected from.
+	RemoteAddress string `protobuf:"bytes,3,opt,name=remote_address,json=remoteAddress,proto3" json:"remote_address,omitempty"`
+	// protocol_version is the Minecraft protocol version the player is using.
+	ProtocolVersion int32 `protobuf:"varint,4,opt,name=protocol_version,json=protocolVersion,proto3" json:"protocol_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *PlayerConnectEvent) Reset() {
+	*x = PlayerConnectEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[60]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlayerConnectEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlayerConnectEvent) ProtoMessage() {}
+
+func (x *PlayerConnectEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[60]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlayerConnectEvent.ProtoReflect.Descriptor instead.
+func (*PlayerConnectEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{60}
+}
+
+func (x *PlayerConnectEvent) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
+func (x *PlayerConnectEvent) GetPlayerUsername() string {
+	if x != nil {
+		return x.PlayerUsername
+	}
+	return ""
+}
+
+func (x *PlayerConnectEvent) GetRemoteAddress() string {
+	if x != nil {
+		return x.RemoteAddress
+	}
+	return ""
+}
+
+func (x *PlayerConnectEvent) GetProtocolVersion() int32 {
+	if x != nil {
+		return x.ProtocolVersion
+	}
+	return 0
+}
+
+// PlayerDisconnectEvent fires when a player disconnects from the proxy.
+type PlayerDisconnectEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// player_id is the UUID of the disconnecting player.
+	PlayerId string `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	// player_username is the username of the disconnecting player.
+	PlayerUsername string `protobuf:"bytes,2,opt,name=player_username,json=playerUsername,proto3" json:"player_username,omitempty"`
+	// reason is the disconnect reason if available.
+	Reason string `protobuf:"bytes,3,opt,name=reason,proto3" json:"reason,omitempty"`
+	// login_status indicates the login state when the player disconnected.
+	LoginStatus   LoginStatus `protobuf:"varint,4,opt,name=login_status,json=loginStatus,proto3,enum=minekube.gate.v1.LoginStatus" json:"login_status,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlayerDisconnectEvent) Reset() {
+	*x = PlayerDisconnectEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[61]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlayerDisconnectEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlayerDisconnectEvent) ProtoMessage() {}
+
+func (x *PlayerDisconnectEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[61]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlayerDisconnectEvent.ProtoReflect.Descriptor instead.
+func (*PlayerDisconnectEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{61}
+}
+
+func (x *PlayerDisconnectEvent) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
+func (x *PlayerDisconnectEvent) GetPlayerUsername() string {
+	if x != nil {
+		return x.PlayerUsername
+	}
+	return ""
+}
+
+func (x *PlayerDisconnectEvent) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
+func (x *PlayerDisconnectEvent) GetLoginStatus() LoginStatus {
+	if x != nil {
+		return x.LoginStatus
+	}
+	return LoginStatus_LOGIN_STATUS_UNSPECIFIED
+}
+
+// PlayerServerSwitchEvent fires when a player switches between servers.
+type PlayerServerSwitchEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// player_id is the UUID of the player switching servers.
+	PlayerId string `protobuf:"bytes,1,opt,name=player_id,json=playerId,proto3" json:"player_id,omitempty"`
+	// player_username is the username of the player switching servers.
+	PlayerUsername string `protobuf:"bytes,2,opt,name=player_username,json=playerUsername,proto3" json:"player_username,omitempty"`
+	// from_server is the name of the server the player is leaving (empty if initial connect).
+	FromServer string `protobuf:"bytes,3,opt,name=from_server,json=fromServer,proto3" json:"from_server,omitempty"`
+	// to_server is the name of the server the player is connecting to.
+	ToServer      string `protobuf:"bytes,4,opt,name=to_server,json=toServer,proto3" json:"to_server,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *PlayerServerSwitchEvent) Reset() {
+	*x = PlayerServerSwitchEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[62]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PlayerServerSwitchEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PlayerServerSwitchEvent) ProtoMessage() {}
+
+func (x *PlayerServerSwitchEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[62]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PlayerServerSwitchEvent.ProtoReflect.Descriptor instead.
+func (*PlayerServerSwitchEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{62}
+}
+
+func (x *PlayerServerSwitchEvent) GetPlayerId() string {
+	if x != nil {
+		return x.PlayerId
+	}
+	return ""
+}
+
+func (x *PlayerServerSwitchEvent) GetPlayerUsername() string {
+	if x != nil {
+		return x.PlayerUsername
+	}
+	return ""
+}
+
+func (x *PlayerServerSwitchEvent) GetFromServer() string {
+	if x != nil {
+		return x.FromServer
+	}
+	return ""
+}
+
+func (x *PlayerServerSwitchEvent) GetToServer() string {
+	if x != nil {
+		return x.ToServer
+	}
+	return ""
+}
+
+// ConfigUpdateEvent fires when proxy configuration is updated.
+type ConfigUpdateEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// config_source indicates how the config was updated.
+	ConfigSource string `protobuf:"bytes,1,opt,name=config_source,json=configSource,proto3" json:"config_source,omitempty"`
+	// lite_mode_enabled indicates if lite mode is enabled in the new config.
+	LiteModeEnabled bool `protobuf:"varint,2,opt,name=lite_mode_enabled,json=liteModeEnabled,proto3" json:"lite_mode_enabled,omitempty"`
+	// route_count is the number of lite routes configured (lite mode only).
+	RouteCount    int32 `protobuf:"varint,3,opt,name=route_count,json=routeCount,proto3" json:"route_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigUpdateEvent) Reset() {
+	*x = ConfigUpdateEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[63]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigUpdateEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigUpdateEvent) ProtoMessage() {}
+
+func (x *ConfigUpdateEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[63]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigUpdateEvent.ProtoReflect.Descriptor instead.
+func (*ConfigUpdateEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{63}
+}
+
+func (x *ConfigUpdateEvent) GetConfigSource() string {
+	if x != nil {
+		return x.ConfigSource
+	}
+	return ""
+}
+
+func (x *ConfigUpdateEvent) GetLiteModeEnabled() bool {
+	if x != nil {
+		return x.LiteModeEnabled
+	}
+	return false
+}
+
+func (x *ConfigUpdateEvent) GetRouteCount() int32 {
+	if x != nil {
+		return x.RouteCount
+	}
+	return 0
+}
+
+// ServerRegisterEvent fires when a new server is registered with the proxy.
+type ServerRegisterEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// server_name is the name of the registered server.
+	ServerName string `protobuf:"bytes,1,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
+	// server_address is the address of the registered server.
+	ServerAddress string `protobuf:"bytes,2,opt,name=server_address,json=serverAddress,proto3" json:"server_address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServerRegisterEvent) Reset() {
+	*x = ServerRegisterEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[64]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServerRegisterEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServerRegisterEvent) ProtoMessage() {}
+
+func (x *ServerRegisterEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[64]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServerRegisterEvent.ProtoReflect.Descriptor instead.
+func (*ServerRegisterEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{64}
+}
+
+func (x *ServerRegisterEvent) GetServerName() string {
+	if x != nil {
+		return x.ServerName
+	}
+	return ""
+}
+
+func (x *ServerRegisterEvent) GetServerAddress() string {
+	if x != nil {
+		return x.ServerAddress
+	}
+	return ""
+}
+
+// ServerUnregisterEvent fires when a server is unregistered from the proxy.
+type ServerUnregisterEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// server_name is the name of the unregistered server.
+	ServerName string `protobuf:"bytes,1,opt,name=server_name,json=serverName,proto3" json:"server_name,omitempty"`
+	// server_address is the address of the unregistered server.
+	ServerAddress string `protobuf:"bytes,2,opt,name=server_address,json=serverAddress,proto3" json:"server_address,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ServerUnregisterEvent) Reset() {
+	*x = ServerUnregisterEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[65]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ServerUnregisterEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ServerUnregisterEvent) ProtoMessage() {}
+
+func (x *ServerUnregisterEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[65]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ServerUnregisterEvent.ProtoReflect.Descriptor instead.
+func (*ServerUnregisterEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{65}
+}
+
+func (x *ServerUnregisterEvent) GetServerName() string {
+	if x != nil {
+		return x.ServerName
+	}
+	return ""
+}
+
+func (x *ServerUnregisterEvent) GetServerAddress() string {
+	if x != nil {
+		return x.ServerAddress
+	}
+	return ""
+}
+
+// LiteRouteUpdateEvent fires when lite mode routes are modified (lite mode only).
+type LiteRouteUpdateEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// host is the hostname pattern of the updated route.
+	Host string `protobuf:"bytes,1,opt,name=host,proto3" json:"host,omitempty"`
+	// operation describes what operation was performed on the route.
+	Operation RouteOperation `protobuf:"varint,2,opt,name=operation,proto3,enum=minekube.gate.v1.RouteOperation" json:"operation,omitempty"`
+	// backend_count is the current number of backends for this route.
+	BackendCount  int32 `protobuf:"varint,3,opt,name=backend_count,json=backendCount,proto3" json:"backend_count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *LiteRouteUpdateEvent) Reset() {
+	*x = LiteRouteUpdateEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[66]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *LiteRouteUpdateEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*LiteRouteUpdateEvent) ProtoMessage() {}
+
+func (x *LiteRouteUpdateEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[66]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use LiteRouteUpdateEvent.ProtoReflect.Descriptor instead.
+func (*LiteRouteUpdateEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{66}
+}
+
+func (x *LiteRouteUpdateEvent) GetHost() string {
+	if x != nil {
+		return x.Host
+	}
+	return ""
+}
+
+func (x *LiteRouteUpdateEvent) GetOperation() RouteOperation {
+	if x != nil {
+		return x.Operation
+	}
+	return RouteOperation_ROUTE_OPERATION_UNSPECIFIED
+}
+
+func (x *LiteRouteUpdateEvent) GetBackendCount() int32 {
+	if x != nil {
+		return x.BackendCount
+	}
+	return 0
+}
+
+// ReadyEvent fires when the proxy is ready to accept connections.
+type ReadyEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// bind_address is the address the proxy is listening on.
+	BindAddress string `protobuf:"bytes,1,opt,name=bind_address,json=bindAddress,proto3" json:"bind_address,omitempty"`
+	// proxy_mode indicates whether the proxy is running in classic or lite mode.
+	ProxyMode     ProxyMode `protobuf:"varint,2,opt,name=proxy_mode,json=proxyMode,proto3,enum=minekube.gate.v1.ProxyMode" json:"proxy_mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReadyEvent) Reset() {
+	*x = ReadyEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[67]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReadyEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReadyEvent) ProtoMessage() {}
+
+func (x *ReadyEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[67]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReadyEvent.ProtoReflect.Descriptor instead.
+func (*ReadyEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{67}
+}
+
+func (x *ReadyEvent) GetBindAddress() string {
+	if x != nil {
+		return x.BindAddress
+	}
+	return ""
+}
+
+func (x *ReadyEvent) GetProxyMode() ProxyMode {
+	if x != nil {
+		return x.ProxyMode
+	}
+	return ProxyMode_PROXY_MODE_UNSPECIFIED
+}
+
+// ShutdownEvent fires when the proxy begins shutting down.
+type ShutdownEvent struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// reason is the shutdown reason if available.
+	Reason        string `protobuf:"bytes,1,opt,name=reason,proto3" json:"reason,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShutdownEvent) Reset() {
+	*x = ShutdownEvent{}
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShutdownEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShutdownEvent) ProtoMessage() {}
+
+func (x *ShutdownEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_minekube_gate_v1_gate_service_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShutdownEvent.ProtoReflect.Descriptor instead.
+func (*ShutdownEvent) Descriptor() ([]byte, []int) {
+	return file_minekube_gate_v1_gate_service_proto_rawDescGZIP(), []int{68}
+}
+
+func (x *ShutdownEvent) GetReason() string {
+	if x != nil {
+		return x.Reason
+	}
+	return ""
+}
+
 var File_minekube_gate_v1_gate_service_proto protoreflect.FileDescriptor
 
 const file_minekube_gate_v1_gate_service_proto_rawDesc = "" +
@@ -3748,7 +4798,69 @@ const file_minekube_gate_v1_gate_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x03 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\"=\n" +
 	"\x1fUpdateLiteRouteFallbackResponse\x12\x1a\n" +
-	"\bwarnings\x18\x01 \x03(\tR\bwarnings*T\n" +
+	"\bwarnings\x18\x01 \x03(\tR\bwarnings\"\xbb\x01\n" +
+	"\x13StreamEventsRequest\x12<\n" +
+	"\vevent_types\x18\x01 \x03(\x0e2\x1b.minekube.gate.v1.EventTypeR\n" +
+	"eventTypes\x122\n" +
+	"\x15include_system_events\x18\x02 \x01(\bR\x13includeSystemEvents\x122\n" +
+	"\x15include_player_events\x18\x03 \x01(\bR\x13includePlayerEvents\"\xc0\x06\n" +
+	"\n" +
+	"ProxyEvent\x12:\n" +
+	"\n" +
+	"event_type\x18\x01 \x01(\x0e2\x1b.minekube.gate.v1.EventTypeR\teventType\x12!\n" +
+	"\ftimestamp_ms\x18\x02 \x01(\x03R\vtimestampMs\x12M\n" +
+	"\x0eplayer_connect\x18\n" +
+	" \x01(\v2$.minekube.gate.v1.PlayerConnectEventH\x00R\rplayerConnect\x12V\n" +
+	"\x11player_disconnect\x18\v \x01(\v2'.minekube.gate.v1.PlayerDisconnectEventH\x00R\x10playerDisconnect\x12]\n" +
+	"\x14player_server_switch\x18\f \x01(\v2).minekube.gate.v1.PlayerServerSwitchEventH\x00R\x12playerServerSwitch\x12J\n" +
+	"\rconfig_update\x18\r \x01(\v2#.minekube.gate.v1.ConfigUpdateEventH\x00R\fconfigUpdate\x12P\n" +
+	"\x0fserver_register\x18\x0e \x01(\v2%.minekube.gate.v1.ServerRegisterEventH\x00R\x0eserverRegister\x12V\n" +
+	"\x11server_unregister\x18\x0f \x01(\v2'.minekube.gate.v1.ServerUnregisterEventH\x00R\x10serverUnregister\x12T\n" +
+	"\x11lite_route_update\x18\x10 \x01(\v2&.minekube.gate.v1.LiteRouteUpdateEventH\x00R\x0fliteRouteUpdate\x124\n" +
+	"\x05ready\x18\x11 \x01(\v2\x1c.minekube.gate.v1.ReadyEventH\x00R\x05ready\x12=\n" +
+	"\bshutdown\x18\x12 \x01(\v2\x1f.minekube.gate.v1.ShutdownEventH\x00R\bshutdownB\f\n" +
+	"\n" +
+	"event_data\"\xac\x01\n" +
+	"\x12PlayerConnectEvent\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12'\n" +
+	"\x0fplayer_username\x18\x02 \x01(\tR\x0eplayerUsername\x12%\n" +
+	"\x0eremote_address\x18\x03 \x01(\tR\rremoteAddress\x12)\n" +
+	"\x10protocol_version\x18\x04 \x01(\x05R\x0fprotocolVersion\"\xb7\x01\n" +
+	"\x15PlayerDisconnectEvent\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12'\n" +
+	"\x0fplayer_username\x18\x02 \x01(\tR\x0eplayerUsername\x12\x16\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\x12@\n" +
+	"\flogin_status\x18\x04 \x01(\x0e2\x1d.minekube.gate.v1.LoginStatusR\vloginStatus\"\x9d\x01\n" +
+	"\x17PlayerServerSwitchEvent\x12\x1b\n" +
+	"\tplayer_id\x18\x01 \x01(\tR\bplayerId\x12'\n" +
+	"\x0fplayer_username\x18\x02 \x01(\tR\x0eplayerUsername\x12\x1f\n" +
+	"\vfrom_server\x18\x03 \x01(\tR\n" +
+	"fromServer\x12\x1b\n" +
+	"\tto_server\x18\x04 \x01(\tR\btoServer\"\x85\x01\n" +
+	"\x11ConfigUpdateEvent\x12#\n" +
+	"\rconfig_source\x18\x01 \x01(\tR\fconfigSource\x12*\n" +
+	"\x11lite_mode_enabled\x18\x02 \x01(\bR\x0fliteModeEnabled\x12\x1f\n" +
+	"\vroute_count\x18\x03 \x01(\x05R\n" +
+	"routeCount\"]\n" +
+	"\x13ServerRegisterEvent\x12\x1f\n" +
+	"\vserver_name\x18\x01 \x01(\tR\n" +
+	"serverName\x12%\n" +
+	"\x0eserver_address\x18\x02 \x01(\tR\rserverAddress\"_\n" +
+	"\x15ServerUnregisterEvent\x12\x1f\n" +
+	"\vserver_name\x18\x01 \x01(\tR\n" +
+	"serverName\x12%\n" +
+	"\x0eserver_address\x18\x02 \x01(\tR\rserverAddress\"\x8f\x01\n" +
+	"\x14LiteRouteUpdateEvent\x12\x12\n" +
+	"\x04host\x18\x01 \x01(\tR\x04host\x12>\n" +
+	"\toperation\x18\x02 \x01(\x0e2 .minekube.gate.v1.RouteOperationR\toperation\x12#\n" +
+	"\rbackend_count\x18\x03 \x01(\x05R\fbackendCount\"k\n" +
+	"\n" +
+	"ReadyEvent\x12!\n" +
+	"\fbind_address\x18\x01 \x01(\tR\vbindAddress\x12:\n" +
+	"\n" +
+	"proxy_mode\x18\x02 \x01(\x0e2\x1b.minekube.gate.v1.ProxyModeR\tproxyMode\"'\n" +
+	"\rShutdownEvent\x12\x16\n" +
+	"\x06reason\x18\x01 \x01(\tR\x06reason*T\n" +
 	"\tProxyMode\x12\x1a\n" +
 	"\x16PROXY_MODE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12PROXY_MODE_CLASSIC\x10\x01\x12\x13\n" +
@@ -3789,7 +4901,32 @@ const file_minekube_gate_v1_gate_service_proto_rawDesc = "" +
 	"\x1aLITE_ROUTE_STRATEGY_RANDOM\x10\x02\x12#\n" +
 	"\x1fLITE_ROUTE_STRATEGY_ROUND_ROBIN\x10\x03\x12)\n" +
 	"%LITE_ROUTE_STRATEGY_LEAST_CONNECTIONS\x10\x04\x12&\n" +
-	"\"LITE_ROUTE_STRATEGY_LOWEST_LATENCY\x10\x052\xe3\t\n" +
+	"\"LITE_ROUTE_STRATEGY_LOWEST_LATENCY\x10\x05*\xbe\x02\n" +
+	"\tEventType\x12\x1a\n" +
+	"\x16EVENT_TYPE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19EVENT_TYPE_PLAYER_CONNECT\x10\x01\x12 \n" +
+	"\x1cEVENT_TYPE_PLAYER_DISCONNECT\x10\x02\x12#\n" +
+	"\x1fEVENT_TYPE_PLAYER_SERVER_SWITCH\x10\x03\x12\x1c\n" +
+	"\x18EVENT_TYPE_CONFIG_UPDATE\x10\x04\x12\x1e\n" +
+	"\x1aEVENT_TYPE_SERVER_REGISTER\x10\x05\x12 \n" +
+	"\x1cEVENT_TYPE_SERVER_UNREGISTER\x10\x06\x12 \n" +
+	"\x1cEVENT_TYPE_LITE_ROUTE_UPDATE\x10\a\x12\x14\n" +
+	"\x10EVENT_TYPE_READY\x10\b\x12\x17\n" +
+	"\x13EVENT_TYPE_SHUTDOWN\x10\t*\xd8\x01\n" +
+	"\vLoginStatus\x12\x1c\n" +
+	"\x18LOGIN_STATUS_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17LOGIN_STATUS_SUCCESSFUL\x10\x01\x12\x1c\n" +
+	"\x18LOGIN_STATUS_CONFLICTING\x10\x02\x12!\n" +
+	"\x1dLOGIN_STATUS_CANCELED_BY_USER\x10\x03\x12\"\n" +
+	"\x1eLOGIN_STATUS_CANCELED_BY_PROXY\x10\x04\x12)\n" +
+	"%LOGIN_STATUS_CANCELED_BEFORE_COMPLETE\x10\x05*\xea\x01\n" +
+	"\x0eRouteOperation\x12\x1f\n" +
+	"\x1bROUTE_OPERATION_UNSPECIFIED\x10\x00\x12!\n" +
+	"\x1dROUTE_OPERATION_BACKEND_ADDED\x10\x01\x12#\n" +
+	"\x1fROUTE_OPERATION_BACKEND_REMOVED\x10\x02\x12$\n" +
+	" ROUTE_OPERATION_STRATEGY_UPDATED\x10\x03\x12#\n" +
+	"\x1fROUTE_OPERATION_OPTIONS_UPDATED\x10\x04\x12$\n" +
+	" ROUTE_OPERATION_FALLBACK_UPDATED\x10\x052\xe3\t\n" +
 	"\vGateService\x12T\n" +
 	"\tGetPlayer\x12\".minekube.gate.v1.GetPlayerRequest\x1a#.minekube.gate.v1.GetPlayerResponse\x12Z\n" +
 	"\vListPlayers\x12$.minekube.gate.v1.ListPlayersRequest\x1a%.minekube.gate.v1.ListPlayersResponse\x12Z\n" +
@@ -3811,7 +4948,9 @@ const file_minekube_gate_v1_gate_service_proto_rawDesc = "" +
 	"\x13AddLiteRouteBackend\x12,.minekube.gate.v1.AddLiteRouteBackendRequest\x1a-.minekube.gate.v1.AddLiteRouteBackendResponse\x12{\n" +
 	"\x16RemoveLiteRouteBackend\x12/.minekube.gate.v1.RemoveLiteRouteBackendRequest\x1a0.minekube.gate.v1.RemoveLiteRouteBackendResponse\x12{\n" +
 	"\x16UpdateLiteRouteOptions\x12/.minekube.gate.v1.UpdateLiteRouteOptionsRequest\x1a0.minekube.gate.v1.UpdateLiteRouteOptionsResponse\x12~\n" +
-	"\x17UpdateLiteRouteFallback\x120.minekube.gate.v1.UpdateLiteRouteFallbackRequest\x1a1.minekube.gate.v1.UpdateLiteRouteFallbackResponseB\xcd\x01\n" +
+	"\x17UpdateLiteRouteFallback\x120.minekube.gate.v1.UpdateLiteRouteFallbackRequest\x1a1.minekube.gate.v1.UpdateLiteRouteFallbackResponse2j\n" +
+	"\x11GateEventsService\x12U\n" +
+	"\fStreamEvents\x12%.minekube.gate.v1.StreamEventsRequest\x1a\x1c.minekube.gate.v1.ProxyEvent0\x01B\xcd\x01\n" +
 	"\x14com.minekube.gate.v1B\x10GateServiceProtoP\x01ZAgo.minekube.com/gate/pkg/internal/api/gen/minekube/gate/v1;gatev1\xa2\x02\x03MGX\xaa\x02\x10Minekube.Gate.V1\xca\x02\x10Minekube\\Gate\\V1\xe2\x02\x1cMinekube\\Gate\\V1\\GPBMetadata\xea\x02\x12Minekube::Gate::V1b\x06proto3"
 
 var (
@@ -3826,152 +4965,182 @@ func file_minekube_gate_v1_gate_service_proto_rawDescGZIP() []byte {
 	return file_minekube_gate_v1_gate_service_proto_rawDescData
 }
 
-var file_minekube_gate_v1_gate_service_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_minekube_gate_v1_gate_service_proto_msgTypes = make([]protoimpl.MessageInfo, 59)
+var file_minekube_gate_v1_gate_service_proto_enumTypes = make([]protoimpl.EnumInfo, 8)
+var file_minekube_gate_v1_gate_service_proto_msgTypes = make([]protoimpl.MessageInfo, 70)
 var file_minekube_gate_v1_gate_service_proto_goTypes = []any{
 	(ProxyMode)(0),                          // 0: minekube.gate.v1.ProxyMode
 	(BedrockDeviceOS)(0),                    // 1: minekube.gate.v1.BedrockDeviceOS
 	(BedrockInputMode)(0),                   // 2: minekube.gate.v1.BedrockInputMode
 	(BedrockUIProfile)(0),                   // 3: minekube.gate.v1.BedrockUIProfile
 	(LiteRouteStrategy)(0),                  // 4: minekube.gate.v1.LiteRouteStrategy
-	(*StoreCookieRequest)(nil),              // 5: minekube.gate.v1.StoreCookieRequest
-	(*StoreCookieResponse)(nil),             // 6: minekube.gate.v1.StoreCookieResponse
-	(*RequestCookieRequest)(nil),            // 7: minekube.gate.v1.RequestCookieRequest
-	(*RequestCookieResponse)(nil),           // 8: minekube.gate.v1.RequestCookieResponse
-	(*DisconnectPlayerRequest)(nil),         // 9: minekube.gate.v1.DisconnectPlayerRequest
-	(*DisconnectPlayerResponse)(nil),        // 10: minekube.gate.v1.DisconnectPlayerResponse
-	(*ConnectPlayerRequest)(nil),            // 11: minekube.gate.v1.ConnectPlayerRequest
-	(*ConnectPlayerResponse)(nil),           // 12: minekube.gate.v1.ConnectPlayerResponse
-	(*RegisterServerRequest)(nil),           // 13: minekube.gate.v1.RegisterServerRequest
-	(*RegisterServerResponse)(nil),          // 14: minekube.gate.v1.RegisterServerResponse
-	(*UnregisterServerRequest)(nil),         // 15: minekube.gate.v1.UnregisterServerRequest
-	(*UnregisterServerResponse)(nil),        // 16: minekube.gate.v1.UnregisterServerResponse
-	(*ListServersRequest)(nil),              // 17: minekube.gate.v1.ListServersRequest
-	(*ListServersResponse)(nil),             // 18: minekube.gate.v1.ListServersResponse
-	(*Server)(nil),                          // 19: minekube.gate.v1.Server
-	(*GetPlayerRequest)(nil),                // 20: minekube.gate.v1.GetPlayerRequest
-	(*GetPlayerResponse)(nil),               // 21: minekube.gate.v1.GetPlayerResponse
-	(*ListPlayersRequest)(nil),              // 22: minekube.gate.v1.ListPlayersRequest
-	(*ListPlayersResponse)(nil),             // 23: minekube.gate.v1.ListPlayersResponse
-	(*Player)(nil),                          // 24: minekube.gate.v1.Player
-	(*BedrockPlayerData)(nil),               // 25: minekube.gate.v1.BedrockPlayerData
-	(*GetStatusRequest)(nil),                // 26: minekube.gate.v1.GetStatusRequest
-	(*GetStatusResponse)(nil),               // 27: minekube.gate.v1.GetStatusResponse
-	(*ClassicStats)(nil),                    // 28: minekube.gate.v1.ClassicStats
-	(*LiteStats)(nil),                       // 29: minekube.gate.v1.LiteStats
-	(*GateConfig)(nil),                      // 30: minekube.gate.v1.GateConfig
-	(*APIConfig)(nil),                       // 31: minekube.gate.v1.APIConfig
-	(*ConnectConfig)(nil),                   // 32: minekube.gate.v1.ConnectConfig
-	(*JavaConfig)(nil),                      // 33: minekube.gate.v1.JavaConfig
-	(*ForwardingConfig)(nil),                // 34: minekube.gate.v1.ForwardingConfig
-	(*StatusConfig)(nil),                    // 35: minekube.gate.v1.StatusConfig
-	(*LiteConfig)(nil),                      // 36: minekube.gate.v1.LiteConfig
-	(*GetConfigRequest)(nil),                // 37: minekube.gate.v1.GetConfigRequest
-	(*GetConfigResponse)(nil),               // 38: minekube.gate.v1.GetConfigResponse
-	(*ValidateConfigRequest)(nil),           // 39: minekube.gate.v1.ValidateConfigRequest
-	(*ValidateConfigResponse)(nil),          // 40: minekube.gate.v1.ValidateConfigResponse
-	(*ApplyConfigRequest)(nil),              // 41: minekube.gate.v1.ApplyConfigRequest
-	(*ApplyConfigResponse)(nil),             // 42: minekube.gate.v1.ApplyConfigResponse
-	(*ListLiteRoutesRequest)(nil),           // 43: minekube.gate.v1.ListLiteRoutesRequest
-	(*ListLiteRoutesResponse)(nil),          // 44: minekube.gate.v1.ListLiteRoutesResponse
-	(*GetLiteRouteRequest)(nil),             // 45: minekube.gate.v1.GetLiteRouteRequest
-	(*GetLiteRouteResponse)(nil),            // 46: minekube.gate.v1.GetLiteRouteResponse
-	(*LiteRouteBackend)(nil),                // 47: minekube.gate.v1.LiteRouteBackend
-	(*LiteRouteOptions)(nil),                // 48: minekube.gate.v1.LiteRouteOptions
-	(*LiteRouteFallback)(nil),               // 49: minekube.gate.v1.LiteRouteFallback
-	(*LiteRouteFallbackVersion)(nil),        // 50: minekube.gate.v1.LiteRouteFallbackVersion
-	(*LiteRouteFallbackPlayers)(nil),        // 51: minekube.gate.v1.LiteRouteFallbackPlayers
-	(*LiteRoute)(nil),                       // 52: minekube.gate.v1.LiteRoute
-	(*UpdateLiteRouteStrategyRequest)(nil),  // 53: minekube.gate.v1.UpdateLiteRouteStrategyRequest
-	(*UpdateLiteRouteStrategyResponse)(nil), // 54: minekube.gate.v1.UpdateLiteRouteStrategyResponse
-	(*AddLiteRouteBackendRequest)(nil),      // 55: minekube.gate.v1.AddLiteRouteBackendRequest
-	(*AddLiteRouteBackendResponse)(nil),     // 56: minekube.gate.v1.AddLiteRouteBackendResponse
-	(*RemoveLiteRouteBackendRequest)(nil),   // 57: minekube.gate.v1.RemoveLiteRouteBackendRequest
-	(*RemoveLiteRouteBackendResponse)(nil),  // 58: minekube.gate.v1.RemoveLiteRouteBackendResponse
-	(*UpdateLiteRouteOptionsRequest)(nil),   // 59: minekube.gate.v1.UpdateLiteRouteOptionsRequest
-	(*UpdateLiteRouteOptionsResponse)(nil),  // 60: minekube.gate.v1.UpdateLiteRouteOptionsResponse
-	(*UpdateLiteRouteFallbackRequest)(nil),  // 61: minekube.gate.v1.UpdateLiteRouteFallbackRequest
-	(*UpdateLiteRouteFallbackResponse)(nil), // 62: minekube.gate.v1.UpdateLiteRouteFallbackResponse
-	nil,                                     // 63: minekube.gate.v1.JavaConfig.ServersEntry
-	(*fieldmaskpb.FieldMask)(nil),           // 64: google.protobuf.FieldMask
+	(EventType)(0),                          // 5: minekube.gate.v1.EventType
+	(LoginStatus)(0),                        // 6: minekube.gate.v1.LoginStatus
+	(RouteOperation)(0),                     // 7: minekube.gate.v1.RouteOperation
+	(*StoreCookieRequest)(nil),              // 8: minekube.gate.v1.StoreCookieRequest
+	(*StoreCookieResponse)(nil),             // 9: minekube.gate.v1.StoreCookieResponse
+	(*RequestCookieRequest)(nil),            // 10: minekube.gate.v1.RequestCookieRequest
+	(*RequestCookieResponse)(nil),           // 11: minekube.gate.v1.RequestCookieResponse
+	(*DisconnectPlayerRequest)(nil),         // 12: minekube.gate.v1.DisconnectPlayerRequest
+	(*DisconnectPlayerResponse)(nil),        // 13: minekube.gate.v1.DisconnectPlayerResponse
+	(*ConnectPlayerRequest)(nil),            // 14: minekube.gate.v1.ConnectPlayerRequest
+	(*ConnectPlayerResponse)(nil),           // 15: minekube.gate.v1.ConnectPlayerResponse
+	(*RegisterServerRequest)(nil),           // 16: minekube.gate.v1.RegisterServerRequest
+	(*RegisterServerResponse)(nil),          // 17: minekube.gate.v1.RegisterServerResponse
+	(*UnregisterServerRequest)(nil),         // 18: minekube.gate.v1.UnregisterServerRequest
+	(*UnregisterServerResponse)(nil),        // 19: minekube.gate.v1.UnregisterServerResponse
+	(*ListServersRequest)(nil),              // 20: minekube.gate.v1.ListServersRequest
+	(*ListServersResponse)(nil),             // 21: minekube.gate.v1.ListServersResponse
+	(*Server)(nil),                          // 22: minekube.gate.v1.Server
+	(*GetPlayerRequest)(nil),                // 23: minekube.gate.v1.GetPlayerRequest
+	(*GetPlayerResponse)(nil),               // 24: minekube.gate.v1.GetPlayerResponse
+	(*ListPlayersRequest)(nil),              // 25: minekube.gate.v1.ListPlayersRequest
+	(*ListPlayersResponse)(nil),             // 26: minekube.gate.v1.ListPlayersResponse
+	(*Player)(nil),                          // 27: minekube.gate.v1.Player
+	(*BedrockPlayerData)(nil),               // 28: minekube.gate.v1.BedrockPlayerData
+	(*GetStatusRequest)(nil),                // 29: minekube.gate.v1.GetStatusRequest
+	(*GetStatusResponse)(nil),               // 30: minekube.gate.v1.GetStatusResponse
+	(*ClassicStats)(nil),                    // 31: minekube.gate.v1.ClassicStats
+	(*LiteStats)(nil),                       // 32: minekube.gate.v1.LiteStats
+	(*GateConfig)(nil),                      // 33: minekube.gate.v1.GateConfig
+	(*APIConfig)(nil),                       // 34: minekube.gate.v1.APIConfig
+	(*ConnectConfig)(nil),                   // 35: minekube.gate.v1.ConnectConfig
+	(*JavaConfig)(nil),                      // 36: minekube.gate.v1.JavaConfig
+	(*ForwardingConfig)(nil),                // 37: minekube.gate.v1.ForwardingConfig
+	(*StatusConfig)(nil),                    // 38: minekube.gate.v1.StatusConfig
+	(*LiteConfig)(nil),                      // 39: minekube.gate.v1.LiteConfig
+	(*GetConfigRequest)(nil),                // 40: minekube.gate.v1.GetConfigRequest
+	(*GetConfigResponse)(nil),               // 41: minekube.gate.v1.GetConfigResponse
+	(*ValidateConfigRequest)(nil),           // 42: minekube.gate.v1.ValidateConfigRequest
+	(*ValidateConfigResponse)(nil),          // 43: minekube.gate.v1.ValidateConfigResponse
+	(*ApplyConfigRequest)(nil),              // 44: minekube.gate.v1.ApplyConfigRequest
+	(*ApplyConfigResponse)(nil),             // 45: minekube.gate.v1.ApplyConfigResponse
+	(*ListLiteRoutesRequest)(nil),           // 46: minekube.gate.v1.ListLiteRoutesRequest
+	(*ListLiteRoutesResponse)(nil),          // 47: minekube.gate.v1.ListLiteRoutesResponse
+	(*GetLiteRouteRequest)(nil),             // 48: minekube.gate.v1.GetLiteRouteRequest
+	(*GetLiteRouteResponse)(nil),            // 49: minekube.gate.v1.GetLiteRouteResponse
+	(*LiteRouteBackend)(nil),                // 50: minekube.gate.v1.LiteRouteBackend
+	(*LiteRouteOptions)(nil),                // 51: minekube.gate.v1.LiteRouteOptions
+	(*LiteRouteFallback)(nil),               // 52: minekube.gate.v1.LiteRouteFallback
+	(*LiteRouteFallbackVersion)(nil),        // 53: minekube.gate.v1.LiteRouteFallbackVersion
+	(*LiteRouteFallbackPlayers)(nil),        // 54: minekube.gate.v1.LiteRouteFallbackPlayers
+	(*LiteRoute)(nil),                       // 55: minekube.gate.v1.LiteRoute
+	(*UpdateLiteRouteStrategyRequest)(nil),  // 56: minekube.gate.v1.UpdateLiteRouteStrategyRequest
+	(*UpdateLiteRouteStrategyResponse)(nil), // 57: minekube.gate.v1.UpdateLiteRouteStrategyResponse
+	(*AddLiteRouteBackendRequest)(nil),      // 58: minekube.gate.v1.AddLiteRouteBackendRequest
+	(*AddLiteRouteBackendResponse)(nil),     // 59: minekube.gate.v1.AddLiteRouteBackendResponse
+	(*RemoveLiteRouteBackendRequest)(nil),   // 60: minekube.gate.v1.RemoveLiteRouteBackendRequest
+	(*RemoveLiteRouteBackendResponse)(nil),  // 61: minekube.gate.v1.RemoveLiteRouteBackendResponse
+	(*UpdateLiteRouteOptionsRequest)(nil),   // 62: minekube.gate.v1.UpdateLiteRouteOptionsRequest
+	(*UpdateLiteRouteOptionsResponse)(nil),  // 63: minekube.gate.v1.UpdateLiteRouteOptionsResponse
+	(*UpdateLiteRouteFallbackRequest)(nil),  // 64: minekube.gate.v1.UpdateLiteRouteFallbackRequest
+	(*UpdateLiteRouteFallbackResponse)(nil), // 65: minekube.gate.v1.UpdateLiteRouteFallbackResponse
+	(*StreamEventsRequest)(nil),             // 66: minekube.gate.v1.StreamEventsRequest
+	(*ProxyEvent)(nil),                      // 67: minekube.gate.v1.ProxyEvent
+	(*PlayerConnectEvent)(nil),              // 68: minekube.gate.v1.PlayerConnectEvent
+	(*PlayerDisconnectEvent)(nil),           // 69: minekube.gate.v1.PlayerDisconnectEvent
+	(*PlayerServerSwitchEvent)(nil),         // 70: minekube.gate.v1.PlayerServerSwitchEvent
+	(*ConfigUpdateEvent)(nil),               // 71: minekube.gate.v1.ConfigUpdateEvent
+	(*ServerRegisterEvent)(nil),             // 72: minekube.gate.v1.ServerRegisterEvent
+	(*ServerUnregisterEvent)(nil),           // 73: minekube.gate.v1.ServerUnregisterEvent
+	(*LiteRouteUpdateEvent)(nil),            // 74: minekube.gate.v1.LiteRouteUpdateEvent
+	(*ReadyEvent)(nil),                      // 75: minekube.gate.v1.ReadyEvent
+	(*ShutdownEvent)(nil),                   // 76: minekube.gate.v1.ShutdownEvent
+	nil,                                     // 77: minekube.gate.v1.JavaConfig.ServersEntry
+	(*fieldmaskpb.FieldMask)(nil),           // 78: google.protobuf.FieldMask
 }
 var file_minekube_gate_v1_gate_service_proto_depIdxs = []int32{
-	19, // 0: minekube.gate.v1.ListServersResponse.servers:type_name -> minekube.gate.v1.Server
-	24, // 1: minekube.gate.v1.GetPlayerResponse.player:type_name -> minekube.gate.v1.Player
-	24, // 2: minekube.gate.v1.ListPlayersResponse.players:type_name -> minekube.gate.v1.Player
-	25, // 3: minekube.gate.v1.Player.bedrock:type_name -> minekube.gate.v1.BedrockPlayerData
+	22, // 0: minekube.gate.v1.ListServersResponse.servers:type_name -> minekube.gate.v1.Server
+	27, // 1: minekube.gate.v1.GetPlayerResponse.player:type_name -> minekube.gate.v1.Player
+	27, // 2: minekube.gate.v1.ListPlayersResponse.players:type_name -> minekube.gate.v1.Player
+	28, // 3: minekube.gate.v1.Player.bedrock:type_name -> minekube.gate.v1.BedrockPlayerData
 	1,  // 4: minekube.gate.v1.BedrockPlayerData.device_os:type_name -> minekube.gate.v1.BedrockDeviceOS
 	3,  // 5: minekube.gate.v1.BedrockPlayerData.ui_profile:type_name -> minekube.gate.v1.BedrockUIProfile
 	2,  // 6: minekube.gate.v1.BedrockPlayerData.input_mode:type_name -> minekube.gate.v1.BedrockInputMode
 	0,  // 7: minekube.gate.v1.GetStatusResponse.mode:type_name -> minekube.gate.v1.ProxyMode
-	28, // 8: minekube.gate.v1.GetStatusResponse.classic:type_name -> minekube.gate.v1.ClassicStats
-	29, // 9: minekube.gate.v1.GetStatusResponse.lite:type_name -> minekube.gate.v1.LiteStats
-	31, // 10: minekube.gate.v1.GateConfig.api:type_name -> minekube.gate.v1.APIConfig
-	32, // 11: minekube.gate.v1.GateConfig.connect:type_name -> minekube.gate.v1.ConnectConfig
-	33, // 12: minekube.gate.v1.GateConfig.config:type_name -> minekube.gate.v1.JavaConfig
-	34, // 13: minekube.gate.v1.JavaConfig.forwarding:type_name -> minekube.gate.v1.ForwardingConfig
-	35, // 14: minekube.gate.v1.JavaConfig.status:type_name -> minekube.gate.v1.StatusConfig
-	63, // 15: minekube.gate.v1.JavaConfig.servers:type_name -> minekube.gate.v1.JavaConfig.ServersEntry
-	36, // 16: minekube.gate.v1.JavaConfig.lite:type_name -> minekube.gate.v1.LiteConfig
-	52, // 17: minekube.gate.v1.LiteConfig.routes:type_name -> minekube.gate.v1.LiteRoute
-	52, // 18: minekube.gate.v1.ListLiteRoutesResponse.routes:type_name -> minekube.gate.v1.LiteRoute
-	52, // 19: minekube.gate.v1.GetLiteRouteResponse.route:type_name -> minekube.gate.v1.LiteRoute
-	50, // 20: minekube.gate.v1.LiteRouteFallback.version:type_name -> minekube.gate.v1.LiteRouteFallbackVersion
-	51, // 21: minekube.gate.v1.LiteRouteFallback.players:type_name -> minekube.gate.v1.LiteRouteFallbackPlayers
-	47, // 22: minekube.gate.v1.LiteRoute.backends:type_name -> minekube.gate.v1.LiteRouteBackend
+	31, // 8: minekube.gate.v1.GetStatusResponse.classic:type_name -> minekube.gate.v1.ClassicStats
+	32, // 9: minekube.gate.v1.GetStatusResponse.lite:type_name -> minekube.gate.v1.LiteStats
+	34, // 10: minekube.gate.v1.GateConfig.api:type_name -> minekube.gate.v1.APIConfig
+	35, // 11: minekube.gate.v1.GateConfig.connect:type_name -> minekube.gate.v1.ConnectConfig
+	36, // 12: minekube.gate.v1.GateConfig.config:type_name -> minekube.gate.v1.JavaConfig
+	37, // 13: minekube.gate.v1.JavaConfig.forwarding:type_name -> minekube.gate.v1.ForwardingConfig
+	38, // 14: minekube.gate.v1.JavaConfig.status:type_name -> minekube.gate.v1.StatusConfig
+	77, // 15: minekube.gate.v1.JavaConfig.servers:type_name -> minekube.gate.v1.JavaConfig.ServersEntry
+	39, // 16: minekube.gate.v1.JavaConfig.lite:type_name -> minekube.gate.v1.LiteConfig
+	55, // 17: minekube.gate.v1.LiteConfig.routes:type_name -> minekube.gate.v1.LiteRoute
+	55, // 18: minekube.gate.v1.ListLiteRoutesResponse.routes:type_name -> minekube.gate.v1.LiteRoute
+	55, // 19: minekube.gate.v1.GetLiteRouteResponse.route:type_name -> minekube.gate.v1.LiteRoute
+	53, // 20: minekube.gate.v1.LiteRouteFallback.version:type_name -> minekube.gate.v1.LiteRouteFallbackVersion
+	54, // 21: minekube.gate.v1.LiteRouteFallback.players:type_name -> minekube.gate.v1.LiteRouteFallbackPlayers
+	50, // 22: minekube.gate.v1.LiteRoute.backends:type_name -> minekube.gate.v1.LiteRouteBackend
 	4,  // 23: minekube.gate.v1.LiteRoute.strategy:type_name -> minekube.gate.v1.LiteRouteStrategy
-	48, // 24: minekube.gate.v1.LiteRoute.options:type_name -> minekube.gate.v1.LiteRouteOptions
-	49, // 25: minekube.gate.v1.LiteRoute.fallback:type_name -> minekube.gate.v1.LiteRouteFallback
+	51, // 24: minekube.gate.v1.LiteRoute.options:type_name -> minekube.gate.v1.LiteRouteOptions
+	52, // 25: minekube.gate.v1.LiteRoute.fallback:type_name -> minekube.gate.v1.LiteRouteFallback
 	4,  // 26: minekube.gate.v1.UpdateLiteRouteStrategyRequest.strategy:type_name -> minekube.gate.v1.LiteRouteStrategy
-	48, // 27: minekube.gate.v1.UpdateLiteRouteOptionsRequest.options:type_name -> minekube.gate.v1.LiteRouteOptions
-	64, // 28: minekube.gate.v1.UpdateLiteRouteOptionsRequest.update_mask:type_name -> google.protobuf.FieldMask
-	49, // 29: minekube.gate.v1.UpdateLiteRouteFallbackRequest.fallback:type_name -> minekube.gate.v1.LiteRouteFallback
-	64, // 30: minekube.gate.v1.UpdateLiteRouteFallbackRequest.update_mask:type_name -> google.protobuf.FieldMask
-	20, // 31: minekube.gate.v1.GateService.GetPlayer:input_type -> minekube.gate.v1.GetPlayerRequest
-	22, // 32: minekube.gate.v1.GateService.ListPlayers:input_type -> minekube.gate.v1.ListPlayersRequest
-	17, // 33: minekube.gate.v1.GateService.ListServers:input_type -> minekube.gate.v1.ListServersRequest
-	13, // 34: minekube.gate.v1.GateService.RegisterServer:input_type -> minekube.gate.v1.RegisterServerRequest
-	15, // 35: minekube.gate.v1.GateService.UnregisterServer:input_type -> minekube.gate.v1.UnregisterServerRequest
-	11, // 36: minekube.gate.v1.GateService.ConnectPlayer:input_type -> minekube.gate.v1.ConnectPlayerRequest
-	9,  // 37: minekube.gate.v1.GateService.DisconnectPlayer:input_type -> minekube.gate.v1.DisconnectPlayerRequest
-	5,  // 38: minekube.gate.v1.GateService.StoreCookie:input_type -> minekube.gate.v1.StoreCookieRequest
-	7,  // 39: minekube.gate.v1.GateService.RequestCookie:input_type -> minekube.gate.v1.RequestCookieRequest
-	26, // 40: minekube.gate.v1.GateService.GetStatus:input_type -> minekube.gate.v1.GetStatusRequest
-	37, // 41: minekube.gate.v1.GateService.GetConfig:input_type -> minekube.gate.v1.GetConfigRequest
-	39, // 42: minekube.gate.v1.GateService.ValidateConfig:input_type -> minekube.gate.v1.ValidateConfigRequest
-	41, // 43: minekube.gate.v1.GateService.ApplyConfig:input_type -> minekube.gate.v1.ApplyConfigRequest
-	43, // 44: minekube.gate.v1.GateLiteService.ListLiteRoutes:input_type -> minekube.gate.v1.ListLiteRoutesRequest
-	45, // 45: minekube.gate.v1.GateLiteService.GetLiteRoute:input_type -> minekube.gate.v1.GetLiteRouteRequest
-	53, // 46: minekube.gate.v1.GateLiteService.UpdateLiteRouteStrategy:input_type -> minekube.gate.v1.UpdateLiteRouteStrategyRequest
-	55, // 47: minekube.gate.v1.GateLiteService.AddLiteRouteBackend:input_type -> minekube.gate.v1.AddLiteRouteBackendRequest
-	57, // 48: minekube.gate.v1.GateLiteService.RemoveLiteRouteBackend:input_type -> minekube.gate.v1.RemoveLiteRouteBackendRequest
-	59, // 49: minekube.gate.v1.GateLiteService.UpdateLiteRouteOptions:input_type -> minekube.gate.v1.UpdateLiteRouteOptionsRequest
-	61, // 50: minekube.gate.v1.GateLiteService.UpdateLiteRouteFallback:input_type -> minekube.gate.v1.UpdateLiteRouteFallbackRequest
-	21, // 51: minekube.gate.v1.GateService.GetPlayer:output_type -> minekube.gate.v1.GetPlayerResponse
-	23, // 52: minekube.gate.v1.GateService.ListPlayers:output_type -> minekube.gate.v1.ListPlayersResponse
-	18, // 53: minekube.gate.v1.GateService.ListServers:output_type -> minekube.gate.v1.ListServersResponse
-	14, // 54: minekube.gate.v1.GateService.RegisterServer:output_type -> minekube.gate.v1.RegisterServerResponse
-	16, // 55: minekube.gate.v1.GateService.UnregisterServer:output_type -> minekube.gate.v1.UnregisterServerResponse
-	12, // 56: minekube.gate.v1.GateService.ConnectPlayer:output_type -> minekube.gate.v1.ConnectPlayerResponse
-	10, // 57: minekube.gate.v1.GateService.DisconnectPlayer:output_type -> minekube.gate.v1.DisconnectPlayerResponse
-	6,  // 58: minekube.gate.v1.GateService.StoreCookie:output_type -> minekube.gate.v1.StoreCookieResponse
-	8,  // 59: minekube.gate.v1.GateService.RequestCookie:output_type -> minekube.gate.v1.RequestCookieResponse
-	27, // 60: minekube.gate.v1.GateService.GetStatus:output_type -> minekube.gate.v1.GetStatusResponse
-	38, // 61: minekube.gate.v1.GateService.GetConfig:output_type -> minekube.gate.v1.GetConfigResponse
-	40, // 62: minekube.gate.v1.GateService.ValidateConfig:output_type -> minekube.gate.v1.ValidateConfigResponse
-	42, // 63: minekube.gate.v1.GateService.ApplyConfig:output_type -> minekube.gate.v1.ApplyConfigResponse
-	44, // 64: minekube.gate.v1.GateLiteService.ListLiteRoutes:output_type -> minekube.gate.v1.ListLiteRoutesResponse
-	46, // 65: minekube.gate.v1.GateLiteService.GetLiteRoute:output_type -> minekube.gate.v1.GetLiteRouteResponse
-	54, // 66: minekube.gate.v1.GateLiteService.UpdateLiteRouteStrategy:output_type -> minekube.gate.v1.UpdateLiteRouteStrategyResponse
-	56, // 67: minekube.gate.v1.GateLiteService.AddLiteRouteBackend:output_type -> minekube.gate.v1.AddLiteRouteBackendResponse
-	58, // 68: minekube.gate.v1.GateLiteService.RemoveLiteRouteBackend:output_type -> minekube.gate.v1.RemoveLiteRouteBackendResponse
-	60, // 69: minekube.gate.v1.GateLiteService.UpdateLiteRouteOptions:output_type -> minekube.gate.v1.UpdateLiteRouteOptionsResponse
-	62, // 70: minekube.gate.v1.GateLiteService.UpdateLiteRouteFallback:output_type -> minekube.gate.v1.UpdateLiteRouteFallbackResponse
-	51, // [51:71] is the sub-list for method output_type
-	31, // [31:51] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	51, // 27: minekube.gate.v1.UpdateLiteRouteOptionsRequest.options:type_name -> minekube.gate.v1.LiteRouteOptions
+	78, // 28: minekube.gate.v1.UpdateLiteRouteOptionsRequest.update_mask:type_name -> google.protobuf.FieldMask
+	52, // 29: minekube.gate.v1.UpdateLiteRouteFallbackRequest.fallback:type_name -> minekube.gate.v1.LiteRouteFallback
+	78, // 30: minekube.gate.v1.UpdateLiteRouteFallbackRequest.update_mask:type_name -> google.protobuf.FieldMask
+	5,  // 31: minekube.gate.v1.StreamEventsRequest.event_types:type_name -> minekube.gate.v1.EventType
+	5,  // 32: minekube.gate.v1.ProxyEvent.event_type:type_name -> minekube.gate.v1.EventType
+	68, // 33: minekube.gate.v1.ProxyEvent.player_connect:type_name -> minekube.gate.v1.PlayerConnectEvent
+	69, // 34: minekube.gate.v1.ProxyEvent.player_disconnect:type_name -> minekube.gate.v1.PlayerDisconnectEvent
+	70, // 35: minekube.gate.v1.ProxyEvent.player_server_switch:type_name -> minekube.gate.v1.PlayerServerSwitchEvent
+	71, // 36: minekube.gate.v1.ProxyEvent.config_update:type_name -> minekube.gate.v1.ConfigUpdateEvent
+	72, // 37: minekube.gate.v1.ProxyEvent.server_register:type_name -> minekube.gate.v1.ServerRegisterEvent
+	73, // 38: minekube.gate.v1.ProxyEvent.server_unregister:type_name -> minekube.gate.v1.ServerUnregisterEvent
+	74, // 39: minekube.gate.v1.ProxyEvent.lite_route_update:type_name -> minekube.gate.v1.LiteRouteUpdateEvent
+	75, // 40: minekube.gate.v1.ProxyEvent.ready:type_name -> minekube.gate.v1.ReadyEvent
+	76, // 41: minekube.gate.v1.ProxyEvent.shutdown:type_name -> minekube.gate.v1.ShutdownEvent
+	6,  // 42: minekube.gate.v1.PlayerDisconnectEvent.login_status:type_name -> minekube.gate.v1.LoginStatus
+	7,  // 43: minekube.gate.v1.LiteRouteUpdateEvent.operation:type_name -> minekube.gate.v1.RouteOperation
+	0,  // 44: minekube.gate.v1.ReadyEvent.proxy_mode:type_name -> minekube.gate.v1.ProxyMode
+	23, // 45: minekube.gate.v1.GateService.GetPlayer:input_type -> minekube.gate.v1.GetPlayerRequest
+	25, // 46: minekube.gate.v1.GateService.ListPlayers:input_type -> minekube.gate.v1.ListPlayersRequest
+	20, // 47: minekube.gate.v1.GateService.ListServers:input_type -> minekube.gate.v1.ListServersRequest
+	16, // 48: minekube.gate.v1.GateService.RegisterServer:input_type -> minekube.gate.v1.RegisterServerRequest
+	18, // 49: minekube.gate.v1.GateService.UnregisterServer:input_type -> minekube.gate.v1.UnregisterServerRequest
+	14, // 50: minekube.gate.v1.GateService.ConnectPlayer:input_type -> minekube.gate.v1.ConnectPlayerRequest
+	12, // 51: minekube.gate.v1.GateService.DisconnectPlayer:input_type -> minekube.gate.v1.DisconnectPlayerRequest
+	8,  // 52: minekube.gate.v1.GateService.StoreCookie:input_type -> minekube.gate.v1.StoreCookieRequest
+	10, // 53: minekube.gate.v1.GateService.RequestCookie:input_type -> minekube.gate.v1.RequestCookieRequest
+	29, // 54: minekube.gate.v1.GateService.GetStatus:input_type -> minekube.gate.v1.GetStatusRequest
+	40, // 55: minekube.gate.v1.GateService.GetConfig:input_type -> minekube.gate.v1.GetConfigRequest
+	42, // 56: minekube.gate.v1.GateService.ValidateConfig:input_type -> minekube.gate.v1.ValidateConfigRequest
+	44, // 57: minekube.gate.v1.GateService.ApplyConfig:input_type -> minekube.gate.v1.ApplyConfigRequest
+	46, // 58: minekube.gate.v1.GateLiteService.ListLiteRoutes:input_type -> minekube.gate.v1.ListLiteRoutesRequest
+	48, // 59: minekube.gate.v1.GateLiteService.GetLiteRoute:input_type -> minekube.gate.v1.GetLiteRouteRequest
+	56, // 60: minekube.gate.v1.GateLiteService.UpdateLiteRouteStrategy:input_type -> minekube.gate.v1.UpdateLiteRouteStrategyRequest
+	58, // 61: minekube.gate.v1.GateLiteService.AddLiteRouteBackend:input_type -> minekube.gate.v1.AddLiteRouteBackendRequest
+	60, // 62: minekube.gate.v1.GateLiteService.RemoveLiteRouteBackend:input_type -> minekube.gate.v1.RemoveLiteRouteBackendRequest
+	62, // 63: minekube.gate.v1.GateLiteService.UpdateLiteRouteOptions:input_type -> minekube.gate.v1.UpdateLiteRouteOptionsRequest
+	64, // 64: minekube.gate.v1.GateLiteService.UpdateLiteRouteFallback:input_type -> minekube.gate.v1.UpdateLiteRouteFallbackRequest
+	66, // 65: minekube.gate.v1.GateEventsService.StreamEvents:input_type -> minekube.gate.v1.StreamEventsRequest
+	24, // 66: minekube.gate.v1.GateService.GetPlayer:output_type -> minekube.gate.v1.GetPlayerResponse
+	26, // 67: minekube.gate.v1.GateService.ListPlayers:output_type -> minekube.gate.v1.ListPlayersResponse
+	21, // 68: minekube.gate.v1.GateService.ListServers:output_type -> minekube.gate.v1.ListServersResponse
+	17, // 69: minekube.gate.v1.GateService.RegisterServer:output_type -> minekube.gate.v1.RegisterServerResponse
+	19, // 70: minekube.gate.v1.GateService.UnregisterServer:output_type -> minekube.gate.v1.UnregisterServerResponse
+	15, // 71: minekube.gate.v1.GateService.ConnectPlayer:output_type -> minekube.gate.v1.ConnectPlayerResponse
+	13, // 72: minekube.gate.v1.GateService.DisconnectPlayer:output_type -> minekube.gate.v1.DisconnectPlayerResponse
+	9,  // 73: minekube.gate.v1.GateService.StoreCookie:output_type -> minekube.gate.v1.StoreCookieResponse
+	11, // 74: minekube.gate.v1.GateService.RequestCookie:output_type -> minekube.gate.v1.RequestCookieResponse
+	30, // 75: minekube.gate.v1.GateService.GetStatus:output_type -> minekube.gate.v1.GetStatusResponse
+	41, // 76: minekube.gate.v1.GateService.GetConfig:output_type -> minekube.gate.v1.GetConfigResponse
+	43, // 77: minekube.gate.v1.GateService.ValidateConfig:output_type -> minekube.gate.v1.ValidateConfigResponse
+	45, // 78: minekube.gate.v1.GateService.ApplyConfig:output_type -> minekube.gate.v1.ApplyConfigResponse
+	47, // 79: minekube.gate.v1.GateLiteService.ListLiteRoutes:output_type -> minekube.gate.v1.ListLiteRoutesResponse
+	49, // 80: minekube.gate.v1.GateLiteService.GetLiteRoute:output_type -> minekube.gate.v1.GetLiteRouteResponse
+	57, // 81: minekube.gate.v1.GateLiteService.UpdateLiteRouteStrategy:output_type -> minekube.gate.v1.UpdateLiteRouteStrategyResponse
+	59, // 82: minekube.gate.v1.GateLiteService.AddLiteRouteBackend:output_type -> minekube.gate.v1.AddLiteRouteBackendResponse
+	61, // 83: minekube.gate.v1.GateLiteService.RemoveLiteRouteBackend:output_type -> minekube.gate.v1.RemoveLiteRouteBackendResponse
+	63, // 84: minekube.gate.v1.GateLiteService.UpdateLiteRouteOptions:output_type -> minekube.gate.v1.UpdateLiteRouteOptionsResponse
+	65, // 85: minekube.gate.v1.GateLiteService.UpdateLiteRouteFallback:output_type -> minekube.gate.v1.UpdateLiteRouteFallbackResponse
+	67, // 86: minekube.gate.v1.GateEventsService.StreamEvents:output_type -> minekube.gate.v1.ProxyEvent
+	66, // [66:87] is the sub-list for method output_type
+	45, // [45:66] is the sub-list for method input_type
+	45, // [45:45] is the sub-list for extension type_name
+	45, // [45:45] is the sub-list for extension extendee
+	0,  // [0:45] is the sub-list for field type_name
 }
 
 func init() { file_minekube_gate_v1_gate_service_proto_init() }
@@ -3983,15 +5152,26 @@ func file_minekube_gate_v1_gate_service_proto_init() {
 		(*GetStatusResponse_Classic)(nil),
 		(*GetStatusResponse_Lite)(nil),
 	}
+	file_minekube_gate_v1_gate_service_proto_msgTypes[59].OneofWrappers = []any{
+		(*ProxyEvent_PlayerConnect)(nil),
+		(*ProxyEvent_PlayerDisconnect)(nil),
+		(*ProxyEvent_PlayerServerSwitch)(nil),
+		(*ProxyEvent_ConfigUpdate)(nil),
+		(*ProxyEvent_ServerRegister)(nil),
+		(*ProxyEvent_ServerUnregister)(nil),
+		(*ProxyEvent_LiteRouteUpdate)(nil),
+		(*ProxyEvent_Ready)(nil),
+		(*ProxyEvent_Shutdown)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_minekube_gate_v1_gate_service_proto_rawDesc), len(file_minekube_gate_v1_gate_service_proto_rawDesc)),
-			NumEnums:      5,
-			NumMessages:   59,
+			NumEnums:      8,
+			NumMessages:   70,
 			NumExtensions: 0,
-			NumServices:   2,
+			NumServices:   3,
 		},
 		GoTypes:           file_minekube_gate_v1_gate_service_proto_goTypes,
 		DependencyIndexes: file_minekube_gate_v1_gate_service_proto_depIdxs,

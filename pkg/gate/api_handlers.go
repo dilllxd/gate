@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 	"sync"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/go-logr/logr"
@@ -531,4 +532,278 @@ func (h *LiteHandlerImpl) applyConfigUpdate(ctx context.Context, newCfg config.C
 	h.mu.Unlock()
 	logr.FromContextOrDiscard(ctx).Info(logMsg, kv...)
 	return warnStrs, nil
+}
+
+// EventsHandlerImpl implements the EventsHandler interface for real-time event streaming
+type EventsHandlerImpl struct {
+	mu       *sync.Mutex
+	cfg      *config.Config
+	eventMgr event.Manager
+	proxy    *proxy.Proxy
+}
+
+func NewEventsHandler(mu *sync.Mutex, cfg *config.Config, eventMgr event.Manager, proxy *proxy.Proxy) *EventsHandlerImpl {
+	return &EventsHandlerImpl{
+		mu:       mu,
+		cfg:      cfg,
+		eventMgr: eventMgr,
+		proxy:    proxy,
+	}
+}
+
+// StreamEvents implements the server streaming RPC for real-time event monitoring
+func (h *EventsHandlerImpl) StreamEvents(ctx context.Context, req *connect.Request[pb.StreamEventsRequest], stream *connect.ServerStream[pb.ProxyEvent]) error {
+	log := logr.FromContextOrDiscard(ctx)
+	log.Info("client connected to event stream")
+
+	// Create buffered channel for events with reasonable buffer size
+	eventChan := make(chan *pb.ProxyEvent, 100)
+	defer close(eventChan)
+
+	// Set up event filters
+	eventTypes := make(map[pb.EventType]bool)
+	if len(req.Msg.EventTypes) > 0 {
+		for _, eventType := range req.Msg.EventTypes {
+			eventTypes[eventType] = true
+		}
+	} else {
+		// If no specific types requested, include all
+		for i := pb.EventType_EVENT_TYPE_PLAYER_CONNECT; i <= pb.EventType_EVENT_TYPE_SHUTDOWN; i++ {
+			eventTypes[i] = true
+		}
+	}
+
+	// Handle defaults for event categories
+	// Since protobuf bools default to false, but our API documentation says default is true,
+	// we treat the case where both are false as "include everything"
+	includePlayerEvents := req.Msg.IncludePlayerEvents
+	includeSystemEvents := req.Msg.IncludeSystemEvents
+
+	// If client sends empty request {}, include all events by default
+	if !includePlayerEvents && !includeSystemEvents {
+		includePlayerEvents = true
+		includeSystemEvents = true
+	}
+
+	// Subscribe to various events and create conversions
+	unsubscribers := h.subscribeToEvents(eventChan, eventTypes, includePlayerEvents, includeSystemEvents)
+	defer func() {
+		for _, unsub := range unsubscribers {
+			unsub()
+		}
+	}()
+
+	// Stream events until client disconnects or context is canceled
+	for {
+		select {
+		case <-ctx.Done():
+			log.Info("client disconnected from event stream")
+			return nil
+		case proxyEvent, ok := <-eventChan:
+			if !ok {
+				return nil
+			}
+			if err := stream.Send(proxyEvent); err != nil {
+				log.Error(err, "failed to send event to client")
+				return err
+			}
+		}
+	}
+}
+
+// subscribeToEvents sets up event listeners and returns unsubscribe functions
+func (h *EventsHandlerImpl) subscribeToEvents(eventChan chan<- *pb.ProxyEvent, eventTypes map[pb.EventType]bool, includePlayer, includeSystem bool) []func() {
+	var unsubscribers []func()
+
+	// Subscribe to config update events
+	if includeSystem && eventTypes[pb.EventType_EVENT_TYPE_CONFIG_UPDATE] {
+		unsub := reload.Subscribe(h.eventMgr, func(e *reload.ConfigUpdateEvent[config.Config]) {
+			h.mu.Lock()
+			isLiteMode := e.Config.Config.Lite.Enabled
+			routeCount := len(e.Config.Config.Lite.Routes)
+			h.mu.Unlock()
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_CONFIG_UPDATE,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_ConfigUpdate{
+					ConfigUpdate: &pb.ConfigUpdateEvent{
+						ConfigSource:     "api",
+						LiteModeEnabled:  isLiteMode,
+						RouteCount:       int32(routeCount),
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+				// Channel full, drop event to prevent blocking
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to player connection events
+	if includePlayer && eventTypes[pb.EventType_EVENT_TYPE_PLAYER_CONNECT] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.PostLoginEvent) {
+			player := e.Player()
+			var remoteAddr string
+			if addr := player.RemoteAddr(); addr != nil {
+				remoteAddr = addr.String()
+			}
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_PLAYER_CONNECT,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_PlayerConnect{
+					PlayerConnect: &pb.PlayerConnectEvent{
+						PlayerId:        player.ID().String(),
+						PlayerUsername:  player.Username(),
+						RemoteAddress:   remoteAddr,
+						ProtocolVersion: int32(player.Protocol()),
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to player disconnect events
+	if includePlayer && eventTypes[pb.EventType_EVENT_TYPE_PLAYER_DISCONNECT] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.DisconnectEvent) {
+			player := e.Player()
+			loginStatus := h.convertLoginStatus(e.LoginStatus())
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_PLAYER_DISCONNECT,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_PlayerDisconnect{
+					PlayerDisconnect: &pb.PlayerDisconnectEvent{
+						PlayerId:       player.ID().String(),
+						PlayerUsername: player.Username(),
+						Reason:         "", // DisconnectEvent doesn't provide reason
+						LoginStatus:    loginStatus,
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to server switch events
+	if includePlayer && eventTypes[pb.EventType_EVENT_TYPE_PLAYER_SERVER_SWITCH] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.ServerConnectedEvent) {
+			player := e.Player()
+			var fromServer string
+			if prevServer := e.PreviousServer(); prevServer != nil {
+				fromServer = prevServer.ServerInfo().Name()
+			}
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_PLAYER_SERVER_SWITCH,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_PlayerServerSwitch{
+					PlayerServerSwitch: &pb.PlayerServerSwitchEvent{
+						PlayerId:       player.ID().String(),
+						PlayerUsername: player.Username(),
+						FromServer:     fromServer,
+						ToServer:       e.Server().ServerInfo().Name(),
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to ready events
+	if includeSystem && eventTypes[pb.EventType_EVENT_TYPE_READY] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.ReadyEvent) {
+			h.mu.Lock()
+			isLiteMode := h.cfg.Config.Lite.Enabled
+			h.mu.Unlock()
+
+			var proxyMode pb.ProxyMode
+			if isLiteMode {
+				proxyMode = pb.ProxyMode_PROXY_MODE_LITE
+			} else {
+				proxyMode = pb.ProxyMode_PROXY_MODE_CLASSIC
+			}
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_READY,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_Ready{
+					Ready: &pb.ReadyEvent{
+						BindAddress: e.Addr(),
+						ProxyMode:   proxyMode,
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to shutdown events
+	if includeSystem && eventTypes[pb.EventType_EVENT_TYPE_SHUTDOWN] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.PreShutdownEvent) {
+			var reason string
+			if e.Reason() != nil {
+				// Convert component to JSON representation as string
+				if data, err := json.Marshal(e.Reason()); err == nil {
+					reason = string(data)
+				}
+			}
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_SHUTDOWN,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_Shutdown{
+					Shutdown: &pb.ShutdownEvent{
+						Reason: reason,
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	return unsubscribers
+}
+
+// convertLoginStatus converts internal LoginStatus to protobuf LoginStatus
+func (h *EventsHandlerImpl) convertLoginStatus(status proxy.LoginStatus) pb.LoginStatus {
+	switch status {
+	case proxy.SuccessfulLoginStatus:
+		return pb.LoginStatus_LOGIN_STATUS_SUCCESSFUL
+	case proxy.ConflictingLoginStatus:
+		return pb.LoginStatus_LOGIN_STATUS_CONFLICTING
+	case proxy.CanceledByUserLoginStatus:
+		return pb.LoginStatus_LOGIN_STATUS_CANCELED_BY_USER
+	case proxy.CanceledByProxyLoginStatus:
+		return pb.LoginStatus_LOGIN_STATUS_CANCELED_BY_PROXY
+	case proxy.CanceledByUserBeforeCompleteLoginStatus:
+		return pb.LoginStatus_LOGIN_STATUS_CANCELED_BEFORE_COMPLETE
+	default:
+		return pb.LoginStatus_LOGIN_STATUS_UNSPECIFIED
+	}
 }
