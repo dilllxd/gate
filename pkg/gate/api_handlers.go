@@ -270,7 +270,11 @@ func (h *LiteHandlerImpl) UpdateLiteRouteStrategy(ctx context.Context, req *pb.U
 	}
 	old := string(newCfg.Config.Lite.Routes[idx].Strategy)
 	newCfg.Config.Lite.Routes[idx].Strategy = config2.Strategy(strategy)
-	return h.applyConfigUpdate(ctx, newCfg, "lite route strategy updated", "host", host, "old", old, "new", strategy)
+	warns, err := h.applyConfigUpdate(ctx, newCfg, "lite route strategy updated", "host", host, "old", old, "new", strategy)
+	if err == nil {
+		h.fireLiteRouteUpdateEvent(host, "strategy_updated", int32(len(newCfg.Config.Lite.Routes[idx].Backend)))
+	}
+	return warns, err
 }
 
 func (h *LiteHandlerImpl) AddLiteRouteBackend(ctx context.Context, req *pb.AddLiteRouteBackendRequest) ([]string, error) {
@@ -296,7 +300,11 @@ func (h *LiteHandlerImpl) AddLiteRouteBackend(ctx context.Context, req *pb.AddLi
 	if !exists {
 		newCfg.Config.Lite.Routes[idx].Backend = append(newCfg.Config.Lite.Routes[idx].Backend, backend)
 	}
-	return h.applyConfigUpdate(ctx, newCfg, "lite route backend added", "host", host, "backend", backend, "alreadyExisted", exists)
+	warns, err := h.applyConfigUpdate(ctx, newCfg, "lite route backend added", "host", host, "backend", backend, "alreadyExisted", exists)
+	if err == nil && !exists {
+		h.fireLiteRouteUpdateEvent(host, "backend_added", int32(len(newCfg.Config.Lite.Routes[idx].Backend)))
+	}
+	return warns, err
 }
 
 func (h *LiteHandlerImpl) RemoveLiteRouteBackend(ctx context.Context, req *pb.RemoveLiteRouteBackendRequest) ([]string, error) {
@@ -323,7 +331,11 @@ func (h *LiteHandlerImpl) RemoveLiteRouteBackend(ctx context.Context, req *pb.Re
 		filtered = append(filtered, b)
 	}
 	newCfg.Config.Lite.Routes[idx].Backend = filtered
-	return h.applyConfigUpdate(ctx, newCfg, "lite route backend removed", "host", host, "backend", backend, "removed", removed)
+	warns, err := h.applyConfigUpdate(ctx, newCfg, "lite route backend removed", "host", host, "backend", backend, "removed", removed)
+	if err == nil && removed {
+		h.fireLiteRouteUpdateEvent(host, "backend_removed", int32(len(newCfg.Config.Lite.Routes[idx].Backend)))
+	}
+	return warns, err
 }
 
 func (h *LiteHandlerImpl) UpdateLiteRouteOptions(ctx context.Context, req *pb.UpdateLiteRouteOptionsRequest) ([]string, error) {
@@ -360,7 +372,11 @@ func (h *LiteHandlerImpl) UpdateLiteRouteOptions(ctx context.Context, req *pb.Up
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported field mask path %q", path))
 		}
 	}
-	return h.applyConfigUpdate(ctx, newCfg, "lite route options updated", "host", host)
+	warns, err := h.applyConfigUpdate(ctx, newCfg, "lite route options updated", "host", host)
+	if err == nil {
+		h.fireLiteRouteUpdateEvent(host, "options_updated", int32(len(newCfg.Config.Lite.Routes[idx].Backend)))
+	}
+	return warns, err
 }
 
 func (h *LiteHandlerImpl) UpdateLiteRouteFallback(ctx context.Context, req *pb.UpdateLiteRouteFallbackRequest) ([]string, error) {
@@ -422,7 +438,11 @@ func (h *LiteHandlerImpl) UpdateLiteRouteFallback(ctx context.Context, req *pb.U
 			return nil, connect.NewError(connect.CodeInvalidArgument, fmt.Errorf("unsupported field mask path %q", path))
 		}
 	}
-	return h.applyConfigUpdate(ctx, newCfg, "lite route fallback updated", "host", host)
+	warns, err := h.applyConfigUpdate(ctx, newCfg, "lite route fallback updated", "host", host)
+	if err == nil {
+		h.fireLiteRouteUpdateEvent(host, "fallback_updated", int32(len(newCfg.Config.Lite.Routes[idx].Backend)))
+	}
+	return warns, err
 }
 
 func (h *LiteHandlerImpl) toProtoFallback(src *config2.Status) *pb.LiteRouteFallback {
@@ -534,6 +554,10 @@ func (h *LiteHandlerImpl) applyConfigUpdate(ctx context.Context, newCfg config.C
 	return warnStrs, nil
 }
 
+func (h *LiteHandlerImpl) fireLiteRouteUpdateEvent(host, operation string, backendCount int32) {
+	h.proxy.Event().Fire(proxy.NewLiteRouteUpdateEvent(host, operation, backendCount))
+}
+
 // EventsHandlerImpl implements the EventsHandler interface for real-time event streaming
 type EventsHandlerImpl struct {
 	mu       *sync.Mutex
@@ -628,9 +652,9 @@ func (h *EventsHandlerImpl) subscribeToEvents(eventChan chan<- *pb.ProxyEvent, e
 				TimestampMs: time.Now().UnixMilli(),
 				EventData: &pb.ProxyEvent_ConfigUpdate{
 					ConfigUpdate: &pb.ConfigUpdateEvent{
-						ConfigSource:     "api",
-						LiteModeEnabled:  isLiteMode,
-						RouteCount:       int32(routeCount),
+						ConfigSource:    "api",
+						LiteModeEnabled: isLiteMode,
+						RouteCount:      int32(routeCount),
 					},
 				},
 			}
@@ -776,6 +800,87 @@ func (h *EventsHandlerImpl) subscribeToEvents(eventChan chan<- *pb.ProxyEvent, e
 				EventData: &pb.ProxyEvent_Shutdown{
 					Shutdown: &pb.ShutdownEvent{
 						Reason: reason,
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to server register events
+	if includeSystem && eventTypes[pb.EventType_EVENT_TYPE_SERVER_REGISTER] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.ServerRegisterEvent) {
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_SERVER_REGISTER,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_ServerRegister{
+					ServerRegister: &pb.ServerRegisterEvent{
+						ServerName:    e.ServerInfo().Name(),
+						ServerAddress: e.ServerInfo().Addr().String(),
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to server unregister events
+	if includeSystem && eventTypes[pb.EventType_EVENT_TYPE_SERVER_UNREGISTER] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.ServerUnregisterEvent) {
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_SERVER_UNREGISTER,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_ServerUnregister{
+					ServerUnregister: &pb.ServerUnregisterEvent{
+						ServerName:    e.ServerInfo().Name(),
+						ServerAddress: e.ServerInfo().Addr().String(),
+					},
+				},
+			}
+			select {
+			case eventChan <- proxyEvent:
+			default:
+			}
+		})
+		unsubscribers = append(unsubscribers, unsub)
+	}
+
+	// Subscribe to lite route update events
+	if includeSystem && eventTypes[pb.EventType_EVENT_TYPE_LITE_ROUTE_UPDATE] {
+		unsub := event.Subscribe(h.eventMgr, 0, func(e *proxy.LiteRouteUpdateEvent) {
+			// Convert operation string to protobuf enum
+			var operation pb.RouteOperation
+			switch e.Operation() {
+			case "backend_added":
+				operation = pb.RouteOperation_ROUTE_OPERATION_BACKEND_ADDED
+			case "backend_removed":
+				operation = pb.RouteOperation_ROUTE_OPERATION_BACKEND_REMOVED
+			case "strategy_updated":
+				operation = pb.RouteOperation_ROUTE_OPERATION_STRATEGY_UPDATED
+			case "options_updated":
+				operation = pb.RouteOperation_ROUTE_OPERATION_OPTIONS_UPDATED
+			case "fallback_updated":
+				operation = pb.RouteOperation_ROUTE_OPERATION_FALLBACK_UPDATED
+			default:
+				operation = pb.RouteOperation_ROUTE_OPERATION_UNSPECIFIED
+			}
+
+			proxyEvent := &pb.ProxyEvent{
+				EventType:   pb.EventType_EVENT_TYPE_LITE_ROUTE_UPDATE,
+				TimestampMs: time.Now().UnixMilli(),
+				EventData: &pb.ProxyEvent_LiteRouteUpdate{
+					LiteRouteUpdate: &pb.LiteRouteUpdateEvent{
+						Host:         e.Host(),
+						Operation:    operation,
+						BackendCount: e.BackendCount(),
 					},
 				},
 			}

@@ -1172,6 +1172,67 @@ func (r *ReadyEvent) Addr() string { return r.addr }
 // such as plugin dependencies.
 type ShutdownEvent struct{}
 
+// ServerRegisterEvent is fired when a new server is registered with the proxy.
+type ServerRegisterEvent struct {
+	serverInfo ServerInfo
+}
+
+// ServerInfo returns the information about the registered server.
+func (e *ServerRegisterEvent) ServerInfo() ServerInfo {
+	return e.serverInfo
+}
+
+// NewServerRegisterEvent creates a new ServerRegisterEvent.
+func NewServerRegisterEvent(serverInfo ServerInfo) *ServerRegisterEvent {
+	return &ServerRegisterEvent{serverInfo: serverInfo}
+}
+
+// ServerUnregisterEvent is fired when a server is unregistered from the proxy.
+type ServerUnregisterEvent struct {
+	serverInfo ServerInfo
+}
+
+// ServerInfo returns the information about the unregistered server.
+func (e *ServerUnregisterEvent) ServerInfo() ServerInfo {
+	return e.serverInfo
+}
+
+// NewServerUnregisterEvent creates a new ServerUnregisterEvent.
+func NewServerUnregisterEvent(serverInfo ServerInfo) *ServerUnregisterEvent {
+	return &ServerUnregisterEvent{serverInfo: serverInfo}
+}
+
+// LiteRouteUpdateEvent is fired when lite mode routes are modified (lite mode only).
+type LiteRouteUpdateEvent struct {
+	host         string
+	operation    string
+	backendCount int32
+}
+
+// Host returns the hostname pattern of the updated route.
+func (e *LiteRouteUpdateEvent) Host() string {
+	return e.host
+}
+
+// Operation returns the operation that was performed on the route.
+func (e *LiteRouteUpdateEvent) Operation() string {
+	return e.operation
+}
+
+// BackendCount returns the current number of backends for this route.
+func (e *LiteRouteUpdateEvent) BackendCount() int32 {
+	return e.backendCount
+}
+
+// NewLiteRouteUpdateEvent creates a new LiteRouteUpdateEvent.
+func NewLiteRouteUpdateEvent(host, operation string, backendCount int32) *LiteRouteUpdateEvent {
+	return &LiteRouteUpdateEvent{
+		host:         host,
+		operation:    operation,
+		backendCount: backendCount,
+	}
+}
+
 //
 //
 //
