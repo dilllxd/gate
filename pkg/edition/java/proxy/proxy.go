@@ -238,10 +238,12 @@ func (p *Proxy) Start(ctx context.Context) error {
 				return false
 			}() {
 				lite.ResetPingCache()
-				p.log.Info("lite ping cache was reset")
+				ResetMOTDPassthroughCache()
+				p.log.Info("lite ping cache and MOTD passthrough cache were reset")
 			}
 		} else {
 			lite.ResetPingCache()
+			ResetMOTDPassthroughCache()
 		}
 		logInfo()
 	})()
@@ -312,10 +314,10 @@ func (p *Proxy) init() (err error) {
 		expectedServers := make(map[string]ServerInfo)
 
 		// Process servers from config
-		for name, addr := range c.Servers {
-			pAddr, err := netutil.Parse(addr, "tcp")
+		for name, serverConfig := range c.Servers {
+			pAddr, err := netutil.Parse(serverConfig.Address, "tcp")
 			if err != nil {
-				return fmt.Errorf("error parsing server %q address %q: %w", name, addr, err)
+				return fmt.Errorf("error parsing server %q address %q: %w", name, serverConfig.Address, err)
 			}
 			info := NewServerInfo(name, pAddr)
 			expectedServers[strings.ToLower(name)] = info

@@ -1,0 +1,35 @@
+config:
+  # Gate proxy bind address
+  bind: 0.0.0.0:25565
+
+  # Enable online mode for testing
+  onlineMode: false
+
+  # Configure servers with MOTD passthrough
+  servers:
+    # Test server with MOTD passthrough enabled
+    testserver:
+      address: localhost:25561
+      passthroughMotd: true
+      cachePingTTL: 5s
+
+    # Fallback server without passthrough (traditional setup)
+    fallback:
+      address: localhost:25566
+      passthroughMotd: false
+
+  # Try servers in order - testserver has passthrough, so its MOTD will be used
+  try:
+    - testserver
+    - fallback
+
+  # Proxy's default MOTD (used as fallback if passthrough fails)
+  status:
+    motd: |
+      §cGate Proxy Default MOTD
+      §eThis should only show if passthrough fails
+    showMaxPlayers: 100
+    logPingRequests: true  # Enable to see ping requests in logs
+
+  # Enable debug for testing
+  debug: true

@@ -37,7 +37,7 @@ var DefaultConfig = Config{
 		ShowPlugins: false,
 	},
 	AnnounceForge:                        false,
-	Servers:                              map[string]string{},
+	Servers:                              ServerConfigs{},
 	Try:                                  []string{},
 	ForcedHosts:                          map[string][]string{},
 	FailoverOnUnexpectedServerDisconnect: true,
@@ -97,7 +97,7 @@ type Config struct { // TODO use https://github.com/projectdiscovery/yamldoc-go 
 	// Forge/FML-compatible server. By default, this is disabled.
 	AnnounceForge bool `yaml:"announceForge,omitempty" json:"announceForge,omitempty"`
 
-	Servers                              map[string]string `yaml:"servers,omitempty" json:"servers,omitempty"` // name:address
+	Servers                              ServerConfigs `yaml:"servers,omitempty" json:"servers,omitempty"` // name:ServerConfig or name:address
 	Try                                  []string          `yaml:"try,omitempty" json:"try,omitempty"`         // Try server names order
 	ForcedHosts                          ForcedHosts       `yaml:"forcedHosts,omitempty" json:"forcedHosts,omitempty"`
 	FailoverOnUnexpectedServerDisconnect bool              `yaml:"failoverOnUnexpectedServerDisconnect,omitempty" json:"failoverOnUnexpectedServerDisconnect,omitempty"`
@@ -130,6 +130,18 @@ type Config struct { // TODO use https://github.com/projectdiscovery/yamldoc-go 
 
 type (
 	ForcedHosts map[string][]string // virtualhost:server names
+	// ServerConfigs represents the servers configuration that supports both simple string addresses
+	// and extended ServerConfig objects for backwards compatibility.
+	ServerConfigs map[string]ServerConfig
+	// ServerConfig represents a single server configuration with optional MOTD passthrough settings.
+	ServerConfig struct {
+		Address          string                `yaml:"address,omitempty" json:"address,omitempty"`                     // Server address (required)
+		PassthroughMOTD  bool                  `yaml:"passthroughMotd,omitempty" json:"passthroughMotd,omitempty"`     // Whether to passthrough MOTD from this server
+		CachePingTTL     configutil.Duration   `yaml:"cachePingTTL,omitempty" json:"cachePingTTL,omitempty"`           // Ping cache TTL for passthrough (0 = default, < 0 = disabled)
+
+		// Internal field to track if this was created from a simple string address
+		fromSimpleAddress bool `yaml:"-" json:"-"`
+	}
 	Status      struct {
 		ShowMaxPlayers  int                       `yaml:"showMaxPlayers"`
 		Motd            *configutil.TextComponent `yaml:"motd"`
@@ -169,6 +181,84 @@ type (
 		SessionServerURL *configutil.URL `yaml:"sessionServerUrl"` // TODO support multiple urls configutil.SingleOrMulti[URL]
 	}
 )
+
+// UnmarshalYAML implements custom unmarshaling for ServerConfigs to support both
+// simple string addresses and extended ServerConfig objects.
+func (sc *ServerConfigs) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	// Try to unmarshal as map[string]string (old format) first
+	var simpleServers map[string]string
+	if err := unmarshal(&simpleServers); err == nil {
+		*sc = make(ServerConfigs)
+		for name, addr := range simpleServers {
+			(*sc)[name] = ServerConfig{
+				Address:           addr,
+				PassthroughMOTD:   false, // Default to false for backwards compatibility
+				CachePingTTL:      0,     // Default TTL
+				fromSimpleAddress: true,
+			}
+		}
+		return nil
+	}
+
+	// Try to unmarshal as map[string]ServerConfig (new format)
+	var extendedServers map[string]ServerConfig
+	if err := unmarshal(&extendedServers); err != nil {
+		return fmt.Errorf("failed to unmarshal servers config: %w", err)
+	}
+
+	*sc = make(ServerConfigs)
+	for name, config := range extendedServers {
+		if config.Address == "" {
+			return fmt.Errorf("server %q is missing required address field", name)
+		}
+		config.fromSimpleAddress = false
+		(*sc)[name] = config
+	}
+	return nil
+}
+
+// MarshalYAML implements custom marshaling for ServerConfigs to preserve the format
+// depending on whether extended features are used.
+func (sc ServerConfigs) MarshalYAML() (interface{}, error) {
+	// Check if any server uses extended features
+	hasExtendedFeatures := false
+	for _, config := range sc {
+		if config.PassthroughMOTD || config.CachePingTTL != 0 {
+			hasExtendedFeatures = true
+			break
+		}
+	}
+
+	if !hasExtendedFeatures {
+		// Marshal as simple map[string]string for backwards compatibility
+		simple := make(map[string]string)
+		for name, config := range sc {
+			simple[name] = config.Address
+		}
+		return simple, nil
+	}
+
+	// Marshal as map[string]ServerConfig when extended features are used
+	extended := make(map[string]ServerConfig)
+	for name, config := range sc {
+		extended[name] = config
+	}
+	return extended, nil
+}
+
+// GetCachePingTTL returns the configured ping cache TTL or a default duration if not set.
+func (sc *ServerConfig) GetCachePingTTL() time.Duration {
+	const defaultTTL = time.Second * 10
+	if sc.CachePingTTL == 0 {
+		return defaultTTL
+	}
+	return time.Duration(sc.CachePingTTL)
+}
+
+// CachePingEnabled returns true if the server has ping cache enabled for passthrough.
+func (sc *ServerConfig) CachePingEnabled() bool {
+	return sc.PassthroughMOTD && sc.GetCachePingTTL() > 0
+}
 
 // ForwardingMode is a player info forwarding mode.
 type ForwardingMode string
@@ -236,13 +326,17 @@ func (c *Config) Validate() (warns []error, errs []error) {
 		w("No backend servers configured.")
 	}
 
-	for name, addr := range c.Servers {
+	for name, serverConfig := range c.Servers {
 		if !validation.ValidServerName(name) {
 			e("Invalid server name format %q: %s and length be 1-%d", name,
 				validation.QualifiedNameErrMsg, validation.QualifiedNameMaxLength)
 		}
-		if err := validation.ValidHostPort(addr); err != nil {
-			e("Invalid address %q for server %q: %w", addr, name, err)
+		if err := validation.ValidHostPort(serverConfig.Address); err != nil {
+			e("Invalid address %q for server %q: %w", serverConfig.Address, name, err)
+		}
+		// Validate ping cache TTL if passthrough is enabled
+		if serverConfig.PassthroughMOTD && serverConfig.CachePingTTL < 0 {
+			e("Invalid ping cache TTL for server %q: must be >= 0", name)
 		}
 	}
 

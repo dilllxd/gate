@@ -159,8 +159,18 @@ func TestForcedHosts_VirtualHostProcessing(t *testing.T) {
 
 // createTestProxyWithForcedHosts creates a test proxy with the given configuration
 func createTestProxyWithForcedHosts(t *testing.T, servers map[string]string, forcedHosts map[string][]string, tryList []string) *Proxy {
+	// Convert simple servers map to ServerConfigs
+	serverConfigs := make(config.ServerConfigs)
+	for name, addr := range servers {
+		serverConfigs[name] = config.ServerConfig{
+			Address:           addr,
+			PassthroughMOTD:   false,
+			CachePingTTL:      0,
+		}
+	}
+
 	cfg := &config.Config{
-		Servers:     servers,
+		Servers:     serverConfigs,
 		ForcedHosts: forcedHosts,
 		Try:         tryList,
 		Lite:        liteconfig.Config{Enabled: false}, // Disable lite mode for server registration

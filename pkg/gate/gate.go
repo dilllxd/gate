@@ -325,7 +325,7 @@ func LoadConfig(v *viper.Viper) (*config.Config, error) {
 	// IMPORTANT: Create fresh maps to avoid sharing state between loads
 	// Maps are reference types in Go, so without this, all config instances
 	// would share the same map, causing removed servers to persist
-	cfg.Config.Servers = make(map[string]string)
+	cfg.Config.Servers = make(jconfig.ServerConfigs)
 	cfg.Config.ForcedHosts = make(map[string][]string)
 
 	// Load in Gate config

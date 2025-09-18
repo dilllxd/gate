@@ -1,0 +1,27 @@
+config:
+  # Gate proxy bind address
+  bind: 0.0.0.0:25565
+
+  # Enable online mode for testing
+  onlineMode: false
+
+  # Old-style server configuration (should work exactly as before)
+  servers:
+    testserver: localhost:25561
+    fallback: localhost:25566
+
+  # Try servers in order
+  try:
+    - testserver
+    - fallback
+
+  # Proxy's MOTD (should always be used since no passthrough is enabled)
+  status:
+    motd: |
+      §aGate Proxy Traditional MOTD
+      §bBackwards compatibility test
+    showMaxPlayers: 100
+    logPingRequests: true
+
+  # Enable debug for testing
+  debug: true

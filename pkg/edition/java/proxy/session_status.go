@@ -115,8 +115,30 @@ func (h *statusSessionHandler) handleStatusRequest(pc *proto.PacketContext) {
 
 	log := h.log
 	if h.resolvePingResponse == nil {
-		e.ping = newInitialPing(h.proxy, pc.Protocol)
+		// Classic mode: try MOTD passthrough first, fall back to proxy MOTD
+		var err error
+		var res *packet.StatusResponse
+		log, res, err = h.proxy.resolveMOTDPassthrough(h.log, pc)
+		if err != nil {
+			// MOTD passthrough failed or not enabled, use proxy's own MOTD
+			log.V(1).Info("MOTD passthrough not available, using proxy MOTD", "error", err)
+			e.ping = newInitialPing(h.proxy, pc.Protocol)
+		} else {
+			// MOTD passthrough succeeded
+			if !h.eventMgr.HasSubscriber(e) {
+				// Fast path: No event handler, just send response
+				_ = h.conn.WritePacket(res)
+				return
+			}
+			// Need to unmarshal status response to ping struct for event handlers
+			e.ping = new(ping.ServerPing)
+			if err = json.Unmarshal([]byte(res.Status), e.ping); err != nil {
+				h.log.V(1).Error(err, "failed to unmarshal passthrough status response, falling back to proxy MOTD")
+				e.ping = newInitialPing(h.proxy, pc.Protocol)
+			}
+		}
 	} else {
+		// Lite mode: use the provided ping resolver
 		var err error
 		var res *packet.StatusResponse
 		log, res, err = h.resolvePingResponse(h.log, pc)
