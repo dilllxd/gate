@@ -17,6 +17,7 @@ import (
 	"go.minekube.com/gate/pkg/edition/java/proto/packet"
 	"go.minekube.com/gate/pkg/edition/java/proto/state"
 	"go.minekube.com/gate/pkg/gate/proto"
+	"go.minekube.com/gate/pkg/util/errs"
 	"go.minekube.com/gate/pkg/util/netutil"
 	"golang.org/x/sync/singleflight"
 )
@@ -82,7 +83,11 @@ func (p *Proxy) resolveMOTDPassthrough(
 
 		conn, netmcConn, err := p.dialPassthroughServer(ctx, serverConfig.Address, statusRequestCtx.Protocol)
 		if err != nil {
-			return nil, fmt.Errorf("failed to dial passthrough server %s: %w", serverName, err)
+			// Use proper verbosity for connection errors
+			return nil, &errs.VerbosityError{
+				Verbosity: getErrorVerbosity(err),
+				Err:       fmt.Errorf("failed to dial passthrough server %s: %w", serverName, err),
+			}
 		}
 		defer func() { _ = netmcConn.Close() }()
 
@@ -148,7 +153,11 @@ func (p *Proxy) dialPassthroughServer(
 
 	conn, err := net.DialTimeout("tcp", addr.String(), time.Duration(cfg.ConnectionTimeout))
 	if err != nil {
-		return nil, nil, err
+		// Use proper verbosity for connection errors (matching lite module pattern)
+		return nil, nil, &errs.VerbosityError{
+			Verbosity: getErrorVerbosity(err),
+			Err:       fmt.Errorf("failed to connect to backend %s: %w", serverAddr, err),
+		}
 	}
 
 	// Create a proper handshake packet for status connection
@@ -233,6 +242,15 @@ func (p *Proxy) sendHandshakeToBackend(conn net.Conn, handshake *packet.Handshak
 	return netmcConn, nil
 }
 
+
+// getErrorVerbosity returns appropriate verbosity level for different error types.
+// Connection refused errors get debug level to reduce spam.
+func getErrorVerbosity(err error) int {
+	if IsConnectionRefused(err) {
+		return 1 // Debug level for connection refused
+	}
+	return 0 // Info level for other errors
+}
 
 // withMOTDLoader returns a ttlcache option that uses the given load function to load a value for a key
 // if it is not already cached.

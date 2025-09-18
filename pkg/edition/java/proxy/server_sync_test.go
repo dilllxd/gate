@@ -42,9 +42,9 @@ func TestServerSyncPreservesAPIServers(t *testing.T) {
 	}
 
 	// Update config: remove config-server2, add config-server3
-	proxy.cfg.Servers = map[string]string{
-		"config-server1": "localhost:25565", // kept
-		"config-server3": "localhost:25569", // new
+	proxy.cfg.Servers = config.ServerConfigs{
+		"config-server1": {Address: "localhost:25565", PassthroughMOTD: false, CachePingTTL: 0}, // kept
+		"config-server3": {Address: "localhost:25569", PassthroughMOTD: false, CachePingTTL: 0}, // new
 		// config-server2 removed
 	}
 
@@ -144,7 +144,16 @@ func TestServerSyncOnConfigReload(t *testing.T) {
 			}
 
 			// Update configuration
-			proxy.cfg.Servers = tt.updatedServers
+			// Convert map[string]string to ServerConfigs
+			serverConfigs := make(config.ServerConfigs)
+			for name, addr := range tt.updatedServers {
+				serverConfigs[name] = config.ServerConfig{
+					Address:         addr,
+					PassthroughMOTD: false,
+					CachePingTTL:    0,
+				}
+			}
+			proxy.cfg.Servers = serverConfigs
 
 			// Trigger server sync (same as config reload)
 			if err := proxy.init(); err != nil {
@@ -187,9 +196,9 @@ func TestServerSyncCaseInsensitive(t *testing.T) {
 	proxy := createTestProxy(t, initialServers)
 
 	// Update config with different case
-	proxy.cfg.Servers = map[string]string{
-		"server1": "localhost:25565", // lowercase
-		"server3": "localhost:25567", // new server
+	proxy.cfg.Servers = config.ServerConfigs{
+		"server1": {Address: "localhost:25565", PassthroughMOTD: false, CachePingTTL: 0}, // lowercase
+		"server3": {Address: "localhost:25567", PassthroughMOTD: false, CachePingTTL: 0}, // new server
 	}
 
 	// Trigger sync
@@ -233,8 +242,8 @@ func TestServerSyncWithAddressChange(t *testing.T) {
 	initialAddr := initialServer.ServerInfo().Addr().String()
 
 	// Change server address in config
-	proxy.cfg.Servers = map[string]string{
-		"testserver": "localhost:25567", // Different port
+	proxy.cfg.Servers = config.ServerConfigs{
+		"testserver": {Address: "localhost:25567", PassthroughMOTD: false, CachePingTTL: 0}, // Different port
 	}
 
 	// Trigger sync
@@ -259,8 +268,18 @@ func TestServerSyncWithAddressChange(t *testing.T) {
 
 // createTestProxy creates a test proxy with the given server configuration
 func createTestProxy(t *testing.T, servers map[string]string) *Proxy {
+	// Convert simple servers map to ServerConfigs
+	serverConfigs := make(config.ServerConfigs)
+	for name, addr := range servers {
+		serverConfigs[name] = config.ServerConfig{
+			Address:         addr,
+			PassthroughMOTD: false,
+			CachePingTTL:    0,
+		}
+	}
+
 	cfg := &config.Config{
-		Servers: servers,
+		Servers: serverConfigs,
 		Lite:    liteconfig.Config{Enabled: false}, // Disable lite mode for server registration
 	}
 
