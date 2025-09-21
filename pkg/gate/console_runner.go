@@ -146,7 +146,9 @@ func (r *consoleRunner) execute(line string) error {
 	case "help", "?":
 		r.printHelp()
 	case "list":
-		return r.handleList(rest)
+		return r.cmdList(rest)
+	case "glist":
+		return r.cmdGList(rest)
 	case "servers":
 		return r.listServers()
 	case "routes":
@@ -154,7 +156,7 @@ func (r *consoleRunner) execute(line string) error {
 	case "kick":
 		return r.kickPlayer(rest)
 	case "move", "send":
-		return r.movePlayer(rest)
+		return r.moveCommand(rest)
 	default:
 		fmt.Fprintf(r.writer, "Unknown command '%s'. Type 'help' for a list.\n", cmd)
 	}
@@ -162,32 +164,68 @@ func (r *consoleRunner) execute(line string) error {
 }
 
 func (r *consoleRunner) printHelp() {
-	lines := []string{
-		"help               - Show this message",
-		"list [players]     - List online players",
-		"servers            - List registered backend servers",
-		"kick <player> [reason] - Disconnect a player with an optional reason",
-		"move <player> <server> - Move a player to a different server",
-		"routes             - Show Gate Lite route configuration",
+	proxy := r.javaProxy()
+	liteEnabled := proxy != nil && proxy.Config().Lite.Enabled
+
+	lines := []string{"help               - Show this message"}
+	if liteEnabled {
+		lines = append(lines, "routes             - Show Gate Lite route configuration")
+	} else {
+		lines = append(lines,
+			"list               - List all online players",
+			"glist [server]     - List players by server or show players on a server",
+			"servers            - List registered backend servers",
+			"kick <player> [reason] - Disconnect a player with an optional reason",
+			"move <player|server> <server> - Move a player or all players to another server",
+			"routes             - Show Gate Lite route configuration",
+		)
 	}
+
 	for _, l := range lines {
 		fmt.Fprintln(r.writer, l)
 	}
 }
 
-func (r *consoleRunner) handleList(args []string) error {
-	if len(args) == 0 || strings.EqualFold(args[0], "players") {
-		return r.listPlayers()
-	}
-	switch strings.ToLower(args[0]) {
-	case "servers":
-		return r.listServers()
-	case "routes":
-		return r.listRoutes()
-	default:
-		fmt.Fprintf(r.writer, "Unknown list target '%s'. Try 'players', 'servers', or 'routes'.\n", args[0])
+func (r *consoleRunner) cmdList(_ []string) error {
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
 		return nil
 	}
+
+	cfg := proxy.Config()
+	if cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "Player listing commands are not available in Gate Lite mode.")
+		return nil
+	}
+
+	return r.listAllPlayers(proxy)
+}
+
+func (r *consoleRunner) cmdGList(args []string) error {
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	cfg := proxy.Config()
+	if cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "Player listing commands are not available in Gate Lite mode.")
+		return nil
+	}
+
+	if len(args) == 0 {
+		return r.listPlayersByServer(proxy)
+	}
+
+	target := proxy.Server(args[0])
+	if target == nil {
+		fmt.Fprintf(r.writer, "Server '%s' is not registered.\n", args[0])
+		return nil
+	}
+
+	return r.listPlayersOnServer(target)
 }
 
 func (r *consoleRunner) javaProxy() *jproxy.Proxy {
@@ -197,59 +235,80 @@ func (r *consoleRunner) javaProxy() *jproxy.Proxy {
 	return r.gate.Java()
 }
 
-func (r *consoleRunner) listPlayers() error {
-	proxy := r.javaProxy()
-	if proxy == nil {
-		fmt.Fprintln(r.writer, "Java proxy not available yet.")
-		return nil
-	}
-
-	cfg := proxy.Config()
-	if cfg.Lite.Enabled {
-		fmt.Fprintln(r.writer, "Player management commands are not available in Gate Lite mode.")
-		return r.listRoutes()
-	}
-
+func (r *consoleRunner) listAllPlayers(proxy *jproxy.Proxy) error {
 	players := proxy.Players()
 	if len(players) == 0 {
 		fmt.Fprintln(r.writer, "No players online.")
 		return nil
 	}
 
-	sort.Slice(players, func(i, j int) bool {
-		return strings.ToLower(players[i].Username()) < strings.ToLower(players[j].Username())
-	})
+	names := make([]string, 0, len(players))
+	for _, p := range players {
+		names = append(names, p.Username())
+	}
+	sortStringsCaseInsensitive(names)
+
+	fmt.Fprintf(r.writer, "Players online (%d):\n", len(names))
+	fmt.Fprintf(r.writer, "  %s\n", strings.Join(names, ", "))
+	return nil
+}
+
+func (r *consoleRunner) listPlayersByServer(proxy *jproxy.Proxy) error {
+	players := proxy.Players()
+	if len(players) == 0 {
+		fmt.Fprintln(r.writer, "No players online.")
+		return nil
+	}
 
 	perServer := map[string][]string{}
+	var pending []string
 	for _, p := range players {
 		server := "pending"
 		if conn := p.CurrentServer(); conn != nil && conn.Server() != nil {
 			server = conn.Server().ServerInfo().Name()
 		}
-		perServer[server] = append(perServer[server], p.Username())
+		if server == "pending" {
+			pending = append(pending, p.Username())
+		} else {
+			perServer[server] = append(perServer[server], p.Username())
+		}
 	}
 
 	serverNames := make([]string, 0, len(perServer))
 	for name := range perServer {
 		serverNames = append(serverNames, name)
 	}
-	sort.Slice(serverNames, func(i, j int) bool {
-		if serverNames[i] == "pending" {
-			return false
-		}
-		if serverNames[j] == "pending" {
-			return true
-		}
-		return strings.ToLower(serverNames[i]) < strings.ToLower(serverNames[j])
-	})
+	sortStringsCaseInsensitive(serverNames)
 
-	fmt.Fprintf(r.writer, "Players online (%d):\n", len(players))
+	fmt.Fprintf(r.writer, "Players by server (%d total):\n", len(players))
 	for _, name := range serverNames {
 		plist := perServer[name]
-		sort.Slice(plist, func(i, j int) bool { return strings.ToLower(plist[i]) < strings.ToLower(plist[j]) })
+		sortStringsCaseInsensitive(plist)
 		fmt.Fprintf(r.writer, "- %s (%d): %s\n", name, len(plist), strings.Join(plist, ", "))
 	}
 
+	if len(pending) > 0 {
+		sortStringsCaseInsensitive(pending)
+		fmt.Fprintf(r.writer, "- pending (%d): %s\n", len(pending), strings.Join(pending, ", "))
+	}
+
+	return nil
+}
+
+func (r *consoleRunner) listPlayersOnServer(server jproxy.RegisteredServer) error {
+	players := jproxy.PlayersToSlice[jproxy.Player](server.Players())
+	if len(players) == 0 {
+		fmt.Fprintf(r.writer, "No players on %s.\n", server.ServerInfo().Name())
+		return nil
+	}
+
+	names := make([]string, 0, len(players))
+	for _, p := range players {
+		names = append(names, p.Username())
+	}
+	sortStringsCaseInsensitive(names)
+
+	fmt.Fprintf(r.writer, "%s (%d players): %s\n", server.ServerInfo().Name(), len(names), strings.Join(names, ", "))
 	return nil
 }
 
@@ -263,7 +322,7 @@ func (r *consoleRunner) listServers() error {
 	cfg := proxy.Config()
 	if cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "Registered server list is not available in Gate Lite mode.")
-		return r.listRoutes()
+		return nil
 	}
 
 	servers := proxy.Servers()
@@ -293,8 +352,7 @@ func (r *consoleRunner) listRoutes() error {
 		return nil
 	}
 
-	cfg := proxy.Config()
-	routes := cfg.Lite.Routes
+	routes := proxy.Config().Lite.Routes
 	if len(routes) == 0 {
 		fmt.Fprintln(r.writer, "No Gate Lite routes configured.")
 		return nil
@@ -304,8 +362,14 @@ func (r *consoleRunner) listRoutes() error {
 	for idx, route := range routes {
 		hosts := route.Host.Multi()
 		backends := route.Backend.Multi()
-		hostStr := strings.Join(hosts, ", ")
-		backendStr := strings.Join(backends, ", ")
+		hostStr := "<none>"
+		if len(hosts) > 0 {
+			hostStr = strings.Join(hosts, ", ")
+		}
+		backendStr := "<none>"
+		if len(backends) > 0 {
+			backendStr = strings.Join(backends, ", ")
+		}
 		strategy := string(route.Strategy)
 		if strategy == "" {
 			strategy = "sequential"
@@ -350,9 +414,9 @@ func (r *consoleRunner) kickPlayer(args []string) error {
 	return nil
 }
 
-func (r *consoleRunner) movePlayer(args []string) error {
+func (r *consoleRunner) moveCommand(args []string) error {
 	if len(args) < 2 {
-		fmt.Fprintln(r.writer, "Usage: move <player> <server>")
+		fmt.Fprintln(r.writer, "Usage: move <player|server> <server>")
 		return nil
 	}
 
@@ -368,15 +432,9 @@ func (r *consoleRunner) movePlayer(args []string) error {
 		return nil
 	}
 
-	player := proxy.PlayerByName(args[0])
-	if player == nil {
-		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", args[0])
-		return nil
-	}
-
-	target := proxy.Server(args[1])
-	if target == nil {
-		fmt.Fprintf(r.writer, "Server '%s' is not registered.\n", args[1])
+	destination := proxy.Server(args[len(args)-1])
+	if destination == nil {
+		fmt.Fprintf(r.writer, "Server '%s' is not registered.\n", args[len(args)-1])
 		return nil
 	}
 
@@ -385,14 +443,78 @@ func (r *consoleRunner) movePlayer(args []string) error {
 		timeout = 5 * time.Second
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	if player.CreateConnectionRequest(target).ConnectWithIndication(ctx) {
-		fmt.Fprintf(r.writer, "Moved %s to %s.\n", player.Username(), target.ServerInfo().Name())
-	} else {
-		fmt.Fprintf(r.writer, "Failed to move %s to %s. Check logs for details.\n", player.Username(), target.ServerInfo().Name())
+	subject := args[0]
+	if player := proxy.PlayerByName(subject); player != nil {
+		r.moveSinglePlayer(player, destination, timeout)
+		return nil
 	}
 
+	r.moveServerPlayers(proxy, subject, destination, timeout)
 	return nil
+}
+
+func (r *consoleRunner) moveSinglePlayer(player jproxy.Player, destination jproxy.RegisteredServer, timeout time.Duration) {
+	if current := player.CurrentServer(); current != nil && jproxy.RegisteredServerEqual(current.Server(), destination) {
+		fmt.Fprintf(r.writer, "%s is already connected to %s.\n", player.Username(), destination.ServerInfo().Name())
+		return
+	}
+
+	if r.movePlayerWithTimeout(player, destination, timeout) {
+		fmt.Fprintf(r.writer, "Moved %s to %s.\n", player.Username(), destination.ServerInfo().Name())
+		return
+	}
+
+	fmt.Fprintf(r.writer, "Failed to move %s to %s. Check logs for details.\n", player.Username(), destination.ServerInfo().Name())
+}
+
+func (r *consoleRunner) moveServerPlayers(proxy *jproxy.Proxy, sourceName string, destination jproxy.RegisteredServer, timeout time.Duration) {
+	source := proxy.Server(sourceName)
+	if source == nil {
+		fmt.Fprintf(r.writer, "Server '%s' is not registered.\n", sourceName)
+		return
+	}
+
+	if jproxy.RegisteredServerEqual(source, destination) {
+		fmt.Fprintf(r.writer, "Source and destination are both %s.\n", destination.ServerInfo().Name())
+		return
+	}
+
+	players := jproxy.PlayersToSlice[jproxy.Player](source.Players())
+	if len(players) == 0 {
+		fmt.Fprintf(r.writer, "No players connected to %s.\n", source.ServerInfo().Name())
+		return
+	}
+
+	moved := make([]string, 0, len(players))
+	failed := make([]string, 0)
+	for _, player := range players {
+		if r.movePlayerWithTimeout(player, destination, timeout) {
+			moved = append(moved, player.Username())
+		} else {
+			failed = append(failed, player.Username())
+		}
+	}
+
+	sortStringsCaseInsensitive(moved)
+	sortStringsCaseInsensitive(failed)
+
+	fmt.Fprintf(r.writer, "Attempted to move %d player(s) from %s to %s.\n", len(players), source.ServerInfo().Name(), destination.ServerInfo().Name())
+	if len(moved) > 0 {
+		fmt.Fprintf(r.writer, "Moved: %s\n", strings.Join(moved, ", "))
+	}
+	if len(failed) > 0 {
+		fmt.Fprintf(r.writer, "Failed: %s\n", strings.Join(failed, ", "))
+	}
+}
+
+func (r *consoleRunner) movePlayerWithTimeout(player jproxy.Player, destination jproxy.RegisteredServer, timeout time.Duration) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	return player.CreateConnectionRequest(destination).ConnectWithIndication(ctx)
+}
+
+func sortStringsCaseInsensitive(values []string) {
+	sort.Slice(values, func(i, j int) bool {
+		return strings.ToLower(values[i]) < strings.ToLower(values[j])
+	})
 }
