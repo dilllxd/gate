@@ -228,6 +228,8 @@ func (r *consoleRunner) execute(line string) error {
 		switch cmd {
 		case "help", "?":
 			r.printHelp()
+		case "info", "version":
+			return r.infoCommand(rest)
 		case "routes":
 			return r.listRoutes()
 		case "stop", "shutdown":
@@ -278,6 +280,7 @@ func (r *consoleRunner) printHelp() {
 	if liteEnabled {
 		fmt.Fprintln(r.writer, "Available commands:")
 		fmt.Fprintln(r.writer, "help - Show available commands")
+		fmt.Fprintln(r.writer, "info - Show Gate version and system information")
 		fmt.Fprintln(r.writer, "routes - Show Gate Lite route configuration")
 		fmt.Fprintln(r.writer, "stop [reason] - Gracefully stop Gate")
 	} else {
