@@ -175,18 +175,22 @@ func (g *Gate) Stop() {
 
 // StopWithReason stops the Gate and, if provided, disconnects players with the given reason.
 func (g *Gate) StopWithReason(reason component.Component) {
-	if g == nil {
-		return
-	}
+    if g == nil {
+        return
+    }
+    // Proactively shut down the Java proxy with the provided reason.
+    // This ensures connected players receive the console-specified message.
+    if jp := g.Java(); jp != nil {
+        jp.Shutdown(reason)
+    }
 
-	// Cancel runtime context first so background processes can begin shutting down.
-	g.Stop()
+    // Cancel runtime context so remaining runnables wind down.
+    g.Stop()
 
-	if bedrock := g.Bedrock(); bedrock != nil {
-		bedrock.Stop()
-	}
-
-	_ = reason // reason is currently unused for proxy shutdown.
+    // Stop Bedrock (does not support a custom disconnect reason here).
+    if bedrock := g.Bedrock(); bedrock != nil {
+        bedrock.Stop()
+    }
 }
 
 func (g *Gate) setStop(cancel context.CancelFunc) {
