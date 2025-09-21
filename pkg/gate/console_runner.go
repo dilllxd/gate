@@ -59,8 +59,10 @@ func newConsoleRunner(g *Gate) process.Runnable {
 func (r *consoleRunner) Start(ctx context.Context) error {
 	log := logr.FromContextOrDiscard(ctx).WithName("console")
 
-	if file, ok := r.reader.(*os.File); ok {
-		r.isTTY.Store(term.IsTerminal(int(file.Fd())))
+	if file, ok := r.reader.(*os.File); ok && file != nil {
+		if fd := file.Fd(); fd >= 0 {
+			r.isTTY.Store(term.IsTerminal(int(fd)))
+		}
 	}
 
 	if !r.isTTY.Load() {
@@ -79,16 +81,19 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 
 	lines := make(chan incoming, 1)
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2) // Track both scanner and context cancellation goroutines
+
+	// Context cancellation goroutine - tracked by WaitGroup
+	go func() {
+		defer wg.Done()
+		<-ctx.Done()
+		r.closeReader()
+	}()
+
+	// Scanner goroutine
 	go func() {
 		defer wg.Done()
 		defer close(lines)
-
-		// Close reader when context is done to unblock scanner
-		go func() {
-			<-ctx.Done()
-			r.closeReader()
-		}()
 
 		scanner := bufio.NewScanner(r.reader)
 		for scanner.Scan() {

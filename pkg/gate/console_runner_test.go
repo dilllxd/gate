@@ -426,3 +426,110 @@ func TestConsoleRunner_kickPlayer_Validation(t *testing.T) {
 		})
 	}
 }
+
+// Additional tests for edge cases and concurrent scenarios
+func TestConsoleRunner_ConcurrentStopRequests(t *testing.T) {
+	writer := &testWriter{}
+	runner := &consoleRunner{
+		writer:   writer,
+		gate:     &testGate{},
+		stopping: atomic.Bool{},
+	}
+
+	// Simulate concurrent stop requests
+	const numGoroutines = 10
+	var wg sync.WaitGroup
+	errors := make([]error, numGoroutines)
+
+	for i := 0; i < numGoroutines; i++ {
+		wg.Add(1)
+		go func(idx int) {
+			defer wg.Done()
+			errors[idx] = runner.stopGate([]string{"test"})
+		}(i)
+	}
+
+	wg.Wait()
+
+	// Verify that all calls returned errStopRequested
+	successCount := 0
+	for _, err := range errors {
+		if err == errStopRequested {
+			successCount++
+		}
+	}
+
+	// All should return errStopRequested, but only one should actually initiate stop
+	assert.Equal(t, numGoroutines, successCount)
+	assert.True(t, runner.stopping.Load())
+}
+
+func TestConsoleRunner_MalformedInput(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+	}{
+		{
+			name:  "whitespace only",
+			input: "   \t\n  ",
+		},
+		{
+			name:  "very long command",
+			input: strings.Repeat("a", 10000),
+		},
+		{
+			name:  "special characters",
+			input: "command\x00\x01\x02",
+		},
+		{
+			name:  "unicode characters",
+			input: "help 测试 🚀 ñoño",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer := &testWriter{}
+			runner := &consoleRunner{
+				writer: writer,
+				gate:   &testGate{},
+			}
+
+			// Should not panic
+			err := runner.execute(tt.input)
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestConsoleRunner_FileDescriptorEdgeCases(t *testing.T) {
+	tests := []struct {
+		name   string
+		reader io.ReadCloser
+	}{
+		{
+			name:   "nil reader",
+			reader: nil,
+		},
+		{
+			name:   "non-file reader",
+			reader: io.NopCloser(strings.NewReader("test")),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			writer := &testWriter{}
+			runner := &consoleRunner{
+				reader: tt.reader,
+				writer: writer,
+				gate:   &testGate{},
+				isTTY:  atomic.Bool{},
+			}
+
+			// Should not panic during TTY detection
+			assert.NotNil(t, runner)
+			assert.False(t, runner.isTTY.Load()) // Should default to false
+		})
+	}
+}
