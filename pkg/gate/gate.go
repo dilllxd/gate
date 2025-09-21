@@ -10,6 +10,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/robinbraemer/event"
@@ -17,6 +18,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"gopkg.in/yaml.v3"
 
+	"go.minekube.com/common/minecraft/component"
 	"go.minekube.com/gate/pkg/edition"
 	bconfig "go.minekube.com/gate/pkg/edition/bedrock/config"
 	bproxy "go.minekube.com/gate/pkg/edition/bedrock/proxy"
@@ -133,6 +135,9 @@ type Gate struct {
 	javaProxy    *jproxy.Proxy      // The Java edition proxy.
 	bedrockProxy *bproxy.Proxy      // The Bedrock edition proxy.
 	proc         process.Collection // Parallel running proc.
+
+	stopMu sync.Mutex
+	stop   context.CancelFunc
 }
 
 // Java returns the Java edition proxy, or nil if none.
@@ -149,7 +154,48 @@ func (g *Gate) Bedrock() *bproxy.Proxy {
 func (g *Gate) Start(ctx context.Context) error {
 	ctx, span := otel.Tracer("gate").Start(ctx, "gate.Start")
 	defer span.End()
+	ctx, cancel := context.WithCancel(ctx)
+	g.setStop(cancel)
+	defer g.clearStop(cancel)
 	return g.proc.Start(ctx)
+}
+
+// Stop cancels the Gate's runtime context, triggering a graceful shutdown.
+func (g *Gate) Stop() {
+	if g == nil {
+		return
+	}
+	g.stopMu.Lock()
+	cancel := g.stop
+	g.stopMu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+// StopWithReason stops the Gate and, if provided, disconnects players with the given reason.
+func (g *Gate) StopWithReason(reason component.Component) {
+	if g == nil {
+		return
+	}
+	if reason != nil {
+		if proxy := g.Java(); proxy != nil {
+			proxy.Shutdown(reason)
+		}
+	}
+	g.Stop()
+}
+
+func (g *Gate) setStop(cancel context.CancelFunc) {
+	g.stopMu.Lock()
+	g.stop = cancel
+	g.stopMu.Unlock()
+}
+
+func (g *Gate) clearStop(cancel context.CancelFunc) {
+	g.stopMu.Lock()
+	g.stop = nil
+	g.stopMu.Unlock()
 }
 
 // Viper is the default viper instance used by Start to load in a config.Config.

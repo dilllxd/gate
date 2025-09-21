@@ -29,9 +29,12 @@ type consoleRunner struct {
 
 	onceClose sync.Once
 	isTTY     atomic.Bool
+	stopping  atomic.Bool
 }
 
 var _ process.Runnable = (*consoleRunner)(nil)
+
+var errStopRequested = errors.New("console stop requested")
 
 func newConsoleRunner(g *Gate) process.Runnable {
 	var reader io.ReadCloser
@@ -111,9 +114,18 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 				return in.err
 			}
 			if err := r.execute(strings.TrimSpace(in.line)); err != nil {
+				if errors.Is(err, errStopRequested) {
+					r.closeReader()
+					return nil
+				}
 				fmt.Fprintf(r.writer, "Error: %v\n", err)
+				if r.stopping.Load() {
+					r.closeReader()
+					return nil
+				}
+			} else if !r.stopping.Load() {
+				r.printPrompt()
 			}
-			r.printPrompt()
 		}
 	}
 }
@@ -151,6 +163,8 @@ func (r *consoleRunner) execute(line string) error {
 			r.printHelp()
 		case "routes":
 			return r.listRoutes()
+		case "stop", "shutdown":
+			return r.stopGate(rest)
 		default:
 			fmt.Fprintf(r.writer, "Command '%s' is not available in Gate Lite mode. Type 'help' for supported commands.\n", cmd)
 		}
@@ -170,6 +184,8 @@ func (r *consoleRunner) execute(line string) error {
 		return r.kickPlayer(rest)
 	case "move", "send":
 		return r.moveCommand(rest)
+	case "stop", "shutdown":
+		return r.stopGate(rest)
 	case "routes":
 		fmt.Fprintln(r.writer, "Command 'routes' is only available in Gate Lite mode.")
 	default:
@@ -184,7 +200,10 @@ func (r *consoleRunner) printHelp() {
 
 	lines := []string{"help               - Show this message"}
 	if liteEnabled {
-		lines = append(lines, "routes             - Show Gate Lite route configuration")
+		lines = append(lines,
+			"routes             - Show Gate Lite route configuration",
+			"stop [reason]      - Gracefully stop Gate",
+		)
 	} else {
 		lines = append(lines,
 			"list               - List all online players",
@@ -192,6 +211,7 @@ func (r *consoleRunner) printHelp() {
 			"servers            - List registered backend servers",
 			"kick <player> [reason] - Disconnect a player with an optional reason",
 			"move <player|server> <server> - Move a player or all players to another server",
+			"stop [reason]      - Gracefully stop Gate",
 		)
 	}
 
@@ -392,6 +412,37 @@ func (r *consoleRunner) listRoutes() error {
 	}
 
 	return nil
+}
+
+func (r *consoleRunner) stopGate(args []string) error {
+	if r.stopping.Swap(true) {
+		fmt.Fprintln(r.writer, "Stop already in progress.")
+		return errStopRequested
+	}
+
+	var (
+		reason  component.Component
+		message string
+	)
+	if len(args) > 0 {
+		text := strings.Join(args, " ")
+		reason = &component.Text{Content: text}
+		message = fmt.Sprintf("Stopping Gate: %s", text)
+	} else {
+		message = "Stopping Gate..."
+	}
+
+	fmt.Fprintln(r.writer, message)
+
+	if r.gate != nil {
+		if reason != nil {
+			r.gate.StopWithReason(reason)
+		} else {
+			r.gate.Stop()
+		}
+	}
+
+	return errStopRequested
 }
 
 func (r *consoleRunner) kickPlayer(args []string) error {
