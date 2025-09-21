@@ -182,6 +182,10 @@ func (g *Gate) StopWithReason(reason component.Component) {
 	// Cancel runtime context first so background processes can begin shutting down.
 	g.Stop()
 
+	if bedrock := g.Bedrock(); bedrock != nil {
+		bedrock.Stop()
+	}
+
 	if proxy := g.Java(); proxy != nil {
 		proxy.Shutdown(reason)
 	}

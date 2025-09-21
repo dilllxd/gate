@@ -62,6 +62,16 @@ type Proxy struct {
 	javaProxy         *jproxy.Proxy // Reference to Java proxy for integration
 }
 
+// Stop stops the managed Geyser integration if it is running.
+func (p *Proxy) Stop() {
+	if p == nil {
+		return
+	}
+	if p.geyserIntegration != nil {
+		p.geyserIntegration.Stop()
+	}
+}
+
 func (p *Proxy) Event() event.Manager { return p.event }
 
 func (p *Proxy) Start(ctx context.Context) error {
