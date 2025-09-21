@@ -82,17 +82,36 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		defer close(lines)
 		scanner := bufio.NewScanner(r.reader)
-		for scanner.Scan() {
-			text := scanner.Text()
-			lines <- incoming{line: text}
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				if scanner.Scan() {
+					text := scanner.Text()
+					select {
+					case lines <- incoming{line: text}:
+					case <-ctx.Done():
+						return
+					}
+				} else {
+					if err := scanner.Err(); err != nil {
+						select {
+						case lines <- incoming{err: err}:
+						case <-ctx.Done():
+						}
+					} else {
+						select {
+						case lines <- incoming{err: io.EOF}:
+						case <-ctx.Done():
+						}
+					}
+					return
+				}
+			}
 		}
-		if err := scanner.Err(); err != nil {
-			lines <- incoming{err: err}
-		} else {
-			lines <- incoming{err: io.EOF}
-		}
-		close(lines)
 	}()
 	defer wg.Wait()
 
@@ -123,9 +142,12 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 					r.closeReader()
 					return nil
 				}
-			} else if !r.stopping.Load() {
-				r.printPrompt()
 			}
+			if r.stopping.Load() {
+				r.closeReader()
+				return nil
+			}
+			r.printPrompt()
 		}
 	}
 }
