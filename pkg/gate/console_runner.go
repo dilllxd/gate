@@ -83,33 +83,33 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 	go func() {
 		defer wg.Done()
 		defer close(lines)
+
+		// Close reader when context is done to unblock scanner
+		go func() {
+			<-ctx.Done()
+			r.closeReader()
+		}()
+
 		scanner := bufio.NewScanner(r.reader)
-		for {
+		for scanner.Scan() {
+			text := scanner.Text()
 			select {
+			case lines <- incoming{line: text}:
 			case <-ctx.Done():
 				return
-			default:
-				if scanner.Scan() {
-					text := scanner.Text()
-					select {
-					case lines <- incoming{line: text}:
-					case <-ctx.Done():
-						return
-					}
-				} else {
-					if err := scanner.Err(); err != nil {
-						select {
-						case lines <- incoming{err: err}:
-						case <-ctx.Done():
-						}
-					} else {
-						select {
-						case lines <- incoming{err: io.EOF}:
-						case <-ctx.Done():
-						}
-					}
-					return
-				}
+			}
+		}
+
+		// Handle scanner completion or error
+		if err := scanner.Err(); err != nil {
+			select {
+			case lines <- incoming{err: err}:
+			case <-ctx.Done():
+			}
+		} else {
+			select {
+			case lines <- incoming{err: io.EOF}:
+			case <-ctx.Done():
 			}
 		}
 	}()
