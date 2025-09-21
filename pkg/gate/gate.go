@@ -178,12 +178,13 @@ func (g *Gate) StopWithReason(reason component.Component) {
 	if g == nil {
 		return
 	}
-	if reason != nil {
-		if proxy := g.Java(); proxy != nil {
-			proxy.Shutdown(reason)
-		}
-	}
+
+	// Cancel runtime context first so background processes can begin shutting down.
 	g.Stop()
+
+	if proxy := g.Java(); proxy != nil {
+		proxy.Shutdown(reason)
+	}
 }
 
 func (g *Gate) setStop(cancel context.CancelFunc) {

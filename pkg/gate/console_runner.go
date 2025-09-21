@@ -435,11 +435,7 @@ func (r *consoleRunner) stopGate(args []string) error {
 	fmt.Fprintln(r.writer, message)
 
 	if r.gate != nil {
-		if reason != nil {
-			r.gate.StopWithReason(reason)
-		} else {
-			r.gate.Stop()
-		}
+		r.gate.StopWithReason(reason)
 	}
 
 	return errStopRequested
