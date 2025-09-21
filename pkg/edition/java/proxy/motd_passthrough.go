@@ -119,36 +119,37 @@ func (p *Proxy) resolveMOTDPassthrough(
 	}
 }
 
-// findPassthroughServer finds the server with MOTD passthrough enabled, following the same priority order
-// as player connections: forcedHosts first (based on virtual host), then Try section, then all servers.
+// findPassthroughServer finds the server with MOTD passthrough enabled following the player routing rules:
+// forcedHosts first (based on virtual host), then the Try section when passthrough via Try is enabled.
 func (p *Proxy) findPassthroughServer(virtualHost net.Addr) (*config.ServerConfig, string) {
 	cfg := p.config()
 
 	// Get the hostname from virtual host for forced hosts lookup
-	var serversToTry []string
 	if virtualHost != nil {
 		virtualHostStr := p.getVirtualHostnameFromAddr(virtualHost)
 		if virtualHostStr != "" {
-			serversToTry = cfg.ForcedHosts[virtualHostStr]
+			if forcedServers := cfg.ForcedHosts[virtualHostStr]; len(forcedServers) > 0 {
+				if serverCfg, name := findFirstPassthrough(cfg.Servers, forcedServers); serverCfg != nil {
+					return serverCfg, name
+				}
+			}
 		}
 	}
 
-	// If no forced hosts match, fall back to Try list
-	if len(serversToTry) == 0 {
-		serversToTry = cfg.Try
-	}
-
-	// Check servers in priority order first
-	for _, serverName := range serversToTry {
-		if serverConfig, exists := cfg.Servers[serverName]; exists && serverConfig.PassthroughMOTD {
-			return &serverConfig, serverName
+	if cfg.TryPassthroughMotd {
+		if serverCfg, name := findFirstPassthrough(cfg.Servers, cfg.Try); serverCfg != nil {
+			return serverCfg, name
 		}
 	}
 
-	// If no priority servers have passthrough, check all servers as fallback
-	for serverName, serverConfig := range cfg.Servers {
-		if serverConfig.PassthroughMOTD {
-			return &serverConfig, serverName
+	return nil, ""
+}
+
+func findFirstPassthrough(servers config.ServerConfigs, names []string) (*config.ServerConfig, string) {
+	for _, serverName := range names {
+		if serverConfig, exists := servers[serverName]; exists && serverConfig.PassthroughMOTD {
+			server := serverConfig
+			return &server, serverName
 		}
 	}
 

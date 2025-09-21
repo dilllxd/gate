@@ -9,3 +9,4 @@ config:
   try:
     - server1
     - server2
+  tryPassthroughMotd: false

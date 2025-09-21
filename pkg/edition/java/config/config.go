@@ -39,6 +39,7 @@ var DefaultConfig = Config{
 	AnnounceForge:                        false,
 	Servers:                              ServerConfigs{},
 	Try:                                  []string{},
+	TryPassthroughMotd:                   false,
 	ForcedHosts:                          map[string][]string{},
 	FailoverOnUnexpectedServerDisconnect: true,
 	ConnectionTimeout:                    configutil.Duration(5000 * time.Millisecond),
@@ -99,6 +100,7 @@ type Config struct { // TODO use https://github.com/projectdiscovery/yamldoc-go 
 
 	Servers                              ServerConfigs `yaml:"servers,omitempty" json:"servers,omitempty"` // name:ServerConfig or name:address
 	Try                                  []string          `yaml:"try,omitempty" json:"try,omitempty"`         // Try server names order
+	TryPassthroughMotd                   bool              `yaml:"tryPassthroughMotd,omitempty" json:"tryPassthroughMotd,omitempty"`
 	ForcedHosts                          ForcedHosts       `yaml:"forcedHosts,omitempty" json:"forcedHosts,omitempty"`
 	FailoverOnUnexpectedServerDisconnect bool              `yaml:"failoverOnUnexpectedServerDisconnect,omitempty" json:"failoverOnUnexpectedServerDisconnect,omitempty"`
 

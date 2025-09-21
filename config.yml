@@ -18,6 +18,8 @@ config:
     - server2
     - server3
     - server4
+  # Whether MOTD passthrough should consider the Try list when resolving ping responses.
+  tryPassthroughMotd: false
   # Configure the response for server list pings.
   status:
     # The message of the day in legacy '§' format or modern text component '{"text":"...", ...}' json.
