@@ -12,6 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/jellydator/ttlcache/v3"
 	"go.minekube.com/gate/pkg/edition/java/config"
+	"go.minekube.com/gate/pkg/edition/java/lite"
 	"go.minekube.com/gate/pkg/edition/java/netmc"
 	"go.minekube.com/gate/pkg/edition/java/proto/codec"
 	"go.minekube.com/gate/pkg/edition/java/proto/packet"
@@ -57,9 +58,10 @@ func IsConnectionRefused(err error) bool {
 func (p *Proxy) resolveMOTDPassthrough(
 	log logr.Logger,
 	statusRequestCtx *proto.PacketContext,
+	virtualHost net.Addr,
 ) (logr.Logger, *packet.StatusResponse, error) {
-	// Find the first server with MOTD passthrough enabled
-	serverConfig, serverName := p.findPassthroughServer()
+	// Find the first server with MOTD passthrough enabled, considering forced hosts first
+	serverConfig, serverName := p.findPassthroughServer(virtualHost)
 	if serverConfig == nil {
 		// No server has passthrough enabled, return proxy's own MOTD
 		return log, nil, errors.New("no server with MOTD passthrough enabled")
@@ -117,18 +119,33 @@ func (p *Proxy) resolveMOTDPassthrough(
 	}
 }
 
-// findPassthroughServer finds the first server in the Try list that has MOTD passthrough enabled.
-func (p *Proxy) findPassthroughServer() (*config.ServerConfig, string) {
+// findPassthroughServer finds the server with MOTD passthrough enabled, following the same priority order
+// as player connections: forcedHosts first (based on virtual host), then Try section, then all servers.
+func (p *Proxy) findPassthroughServer(virtualHost net.Addr) (*config.ServerConfig, string) {
 	cfg := p.config()
 
-	// Check servers in Try order first
-	for _, serverName := range cfg.Try {
+	// Get the hostname from virtual host for forced hosts lookup
+	var serversToTry []string
+	if virtualHost != nil {
+		virtualHostStr := p.getVirtualHostnameFromAddr(virtualHost)
+		if virtualHostStr != "" {
+			serversToTry = cfg.ForcedHosts[virtualHostStr]
+		}
+	}
+
+	// If no forced hosts match, fall back to Try list
+	if len(serversToTry) == 0 {
+		serversToTry = cfg.Try
+	}
+
+	// Check servers in priority order first
+	for _, serverName := range serversToTry {
 		if serverConfig, exists := cfg.Servers[serverName]; exists && serverConfig.PassthroughMOTD {
 			return &serverConfig, serverName
 		}
 	}
 
-	// If no Try servers have passthrough, check all servers
+	// If no priority servers have passthrough, check all servers as fallback
 	for serverName, serverConfig := range cfg.Servers {
 		if serverConfig.PassthroughMOTD {
 			return &serverConfig, serverName
@@ -136,6 +153,24 @@ func (p *Proxy) findPassthroughServer() (*config.ServerConfig, string) {
 	}
 
 	return nil, ""
+}
+
+// getVirtualHostnameFromAddr extracts the hostname from a virtual host address and converts it to lowercase.
+// This mirrors the same logic used in connectedPlayer.getVirtualHostname() for consistency.
+func (p *Proxy) getVirtualHostnameFromAddr(virtualHost net.Addr) string {
+	if virtualHost == nil {
+		return ""
+	}
+
+	// Use Gate's existing utility functions to clean the virtual host
+	// 1. Clear virtual host (removes forge separators, TCPShield separators, etc.)
+	// 2. Extract hostname (removes port)
+	// 3. Convert to lowercase for consistent matching
+	virtualHostStr := virtualHost.String()
+	cleanedHost := lite.ClearVirtualHost(virtualHostStr)
+	hostname := netutil.HostStr(cleanedHost)
+
+	return strings.ToLower(hostname)
 }
 
 // dialPassthroughServer dials a backend server for MOTD passthrough.
