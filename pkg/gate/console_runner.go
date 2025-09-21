@@ -193,8 +193,21 @@ func (r *consoleRunner) printPrompt() {
 
 func (r *consoleRunner) closeReader() {
 	r.onceClose.Do(func() {
-		if r.reader != nil {
-			_ = r.reader.Close()
+		if r.reader == nil {
+			return
+		}
+
+		done := make(chan struct{})
+		// Closing the console reader can block on Windows for tens of seconds,
+		// so perform it asynchronously and only wait briefly.
+		go func(reader io.Closer) {
+			defer close(done)
+			_ = reader.Close()
+		}(r.reader)
+
+		select {
+		case <-done:
+		case <-time.After(250 * time.Millisecond):
 		}
 	})
 }
