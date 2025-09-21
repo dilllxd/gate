@@ -14,7 +14,8 @@ config:
   try:
     - fabric     # With the improved logic, this will be used for the default domain (not forced hosts)
     - vanilla
+  tryPassthroughMotd: true
   forcedHosts:
-    "snapshot.miniverse.fr": ["vanilla"]
-    "fabric.miniverse.fr": ["fabric"]
-    "forge.miniverse.fr": ["neoforge"]
+    "snapshot.example.test": ["vanilla"]
+    "fabric.example.test": ["fabric"]
+    "forge.example.test": ["neoforge"]

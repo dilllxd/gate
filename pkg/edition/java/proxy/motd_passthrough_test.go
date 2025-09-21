@@ -101,11 +101,11 @@ func TestGetErrorVerbosity(t *testing.T) {
 
 func TestFindPassthroughServer(t *testing.T) {
 	tests := []struct {
-		name                    string
-		setupConfig            func() *config.Config
-		virtualHost            string // hostname for testing forced hosts
-		expectedServerName     string
-		expectedServerConfig   *config.ServerConfig
+		name                  string
+		setupConfig           func() *config.Config
+		virtualHost           string // hostname for testing forced hosts
+		expectedServerName    string
+		expectedServerConfig  *config.ServerConfig
 	}{
 		{
 			name: "finds server from forcedHosts when virtual host matches",
@@ -118,13 +118,13 @@ func TestFindPassthroughServer(t *testing.T) {
 					},
 					Try: []string{"fabric", "vanilla"},
 					ForcedHosts: map[string][]string{
-						"snapshot.miniverse.fr": {"vanilla"},
-						"fabric.miniverse.fr":   {"fabric"},
-						"forge.miniverse.fr":    {"neoforge"},
+						"snapshot.example.test": {"vanilla"},
+						"fabric.example.test":   {"fabric"},
+						"forge.example.test":    {"neoforge"},
 					},
 				}
 			},
-			virtualHost:        "snapshot.miniverse.fr:25565",
+			virtualHost:        "snapshot.example.test:25565",
 			expectedServerName: "vanilla",
 			expectedServerConfig: &config.ServerConfig{
 				Address:         "localhost:25566",
@@ -132,7 +132,7 @@ func TestFindPassthroughServer(t *testing.T) {
 			},
 		},
 		{
-			name: "falls back to Try list when virtual host doesn't match forcedHosts",
+			name: "falls back to Try list when enabled and virtual host doesn't match forcedHosts",
 			setupConfig: func() *config.Config {
 				return &config.Config{
 					Servers: config.ServerConfigs{
@@ -140,9 +140,10 @@ func TestFindPassthroughServer(t *testing.T) {
 						"fabric":   {Address: "localhost:25567", PassthroughMOTD: true},
 						"neoforge": {Address: "localhost:25568", PassthroughMOTD: true},
 					},
-					Try: []string{"fabric", "vanilla"},
+					Try:                []string{"fabric", "vanilla"},
+					TryPassthroughMotd: true,
 					ForcedHosts: map[string][]string{
-						"snapshot.miniverse.fr": {"vanilla"},
+						"snapshot.example.test": {"vanilla"},
 					},
 				}
 			},
@@ -154,7 +155,7 @@ func TestFindPassthroughServer(t *testing.T) {
 			},
 		},
 		{
-			name: "finds first server in Try list with passthrough enabled (no virtual host)",
+			name: "finds first server in Try list with passthrough enabled when option is true",
 			setupConfig: func() *config.Config {
 				return &config.Config{
 					Servers: config.ServerConfigs{
@@ -162,7 +163,8 @@ func TestFindPassthroughServer(t *testing.T) {
 						"server2": {Address: "localhost:25562", PassthroughMOTD: true},
 						"server3": {Address: "localhost:25563", PassthroughMOTD: true},
 					},
-					Try: []string{"server2", "server3"},
+					Try:                []string{"server2", "server3"},
+					TryPassthroughMotd: true,
 				}
 			},
 			virtualHost:        "", // No virtual host
@@ -171,6 +173,22 @@ func TestFindPassthroughServer(t *testing.T) {
 				Address:         "localhost:25562",
 				PassthroughMOTD: true,
 			},
+		},
+		{
+			name: "returns nil when Try list passthrough is disabled",
+			setupConfig: func() *config.Config {
+				return &config.Config{
+					Servers: config.ServerConfigs{
+						"server1": {Address: "localhost:25561", PassthroughMOTD: false},
+						"server2": {Address: "localhost:25562", PassthroughMOTD: true},
+					},
+					Try:                []string{"server2"},
+					TryPassthroughMotd: false,
+				}
+			},
+			virtualHost:          "",
+			expectedServerName:   "",
+			expectedServerConfig: nil,
 		},
 		{
 			name: "returns nil when no servers have passthrough enabled",
@@ -188,23 +206,21 @@ func TestFindPassthroughServer(t *testing.T) {
 			expectedServerConfig: nil,
 		},
 		{
-			name: "falls back to any server with passthrough if Try list servers don't have it",
+			name: "returns nil when only non-Try servers have passthrough",
 			setupConfig: func() *config.Config {
 				return &config.Config{
 					Servers: config.ServerConfigs{
-						"server1":      {Address: "localhost:25561", PassthroughMOTD: false},
-						"server2":      {Address: "localhost:25562", PassthroughMOTD: false},
-						"fallback":     {Address: "localhost:25563", PassthroughMOTD: true},
+						"server1":  {Address: "localhost:25561", PassthroughMOTD: false},
+						"server2":  {Address: "localhost:25562", PassthroughMOTD: false},
+						"fallback": {Address: "localhost:25563", PassthroughMOTD: true},
 					},
-					Try: []string{"server1", "server2"},
+					Try:                []string{"server1", "server2"},
+					TryPassthroughMotd: true,
 				}
 			},
-			virtualHost:        "",
-			expectedServerName: "fallback",
-			expectedServerConfig: &config.ServerConfig{
-				Address:         "localhost:25563",
-				PassthroughMOTD: true,
-			},
+			virtualHost:          "",
+			expectedServerName:   "",
+			expectedServerConfig: nil,
 		},
 		{
 			name: "returns nil when no servers exist",
@@ -226,18 +242,38 @@ func TestFindPassthroughServer(t *testing.T) {
 						"vanilla": {Address: "localhost:25566", PassthroughMOTD: false}, // No passthrough
 						"fabric":  {Address: "localhost:25567", PassthroughMOTD: true},
 					},
-					Try: []string{"fabric"},
+					Try:                []string{"fabric"},
+					TryPassthroughMotd: true,
 					ForcedHosts: map[string][]string{
-						"snapshot.miniverse.fr": {"vanilla"}, // This server doesn't have passthrough
+						"snapshot.example.test": {"vanilla"}, // This server doesn't have passthrough
 					},
 				}
 			},
-			virtualHost:        "snapshot.miniverse.fr:25565",
+			virtualHost:        "snapshot.example.test:25565",
 			expectedServerName: "fabric", // Should fall back to Try list
 			expectedServerConfig: &config.ServerConfig{
 				Address:         "localhost:25567",
 				PassthroughMOTD: true,
 			},
+		},
+		{
+			name: "returns nil when forcedHost lacks passthrough and Try passthrough disabled",
+			setupConfig: func() *config.Config {
+				return &config.Config{
+					Servers: config.ServerConfigs{
+						"vanilla": {Address: "localhost:25566", PassthroughMOTD: false},
+						"fabric":  {Address: "localhost:25567", PassthroughMOTD: true},
+					},
+					Try:                []string{"fabric"},
+					TryPassthroughMotd: false,
+					ForcedHosts: map[string][]string{
+						"snapshot.example.test": {"vanilla"},
+					},
+				}
+			},
+			virtualHost:          "snapshot.example.test:25565",
+			expectedServerName:   "",
+			expectedServerConfig: nil,
 		},
 	}
 
@@ -351,13 +387,13 @@ func TestGetVirtualHostnameFromAddr(t *testing.T) {
 	}{
 		{
 			name:         "extracts hostname from address with port",
-			virtualHost:  &testNetAddr{address: "snapshot.miniverse.fr:25565"},
-			expectedHost: "snapshot.miniverse.fr",
+			virtualHost:  &testNetAddr{address: "snapshot.example.test:25565"},
+			expectedHost: "snapshot.example.test",
 		},
 		{
 			name:         "extracts hostname from address without port",
-			virtualHost:  &testNetAddr{address: "fabric.miniverse.fr"},
-			expectedHost: "fabric.miniverse.fr",
+			virtualHost:  &testNetAddr{address: "fabric.example.test"},
+			expectedHost: "fabric.example.test",
 		},
 		{
 			name:         "handles localhost",
