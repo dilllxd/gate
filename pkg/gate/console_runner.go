@@ -506,20 +506,19 @@ func (r *consoleRunner) stopGate(args []string) error {
 }
 
 func (r *consoleRunner) kickPlayer(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: kick <player> [reason]")
+		return nil
+	}
+
 	proxy := r.javaProxy()
 	if proxy == nil {
 		fmt.Fprintln(r.writer, "Java proxy not available yet.")
 		return nil
 	}
 
-	cfg := proxy.Config()
-	if cfg.Lite.Enabled {
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "Kick command is not available in Gate Lite mode.")
-		return nil
-	}
-
-	if len(args) == 0 {
-		fmt.Fprintln(r.writer, "Usage: kick <player> [reason]")
 		return nil
 	}
 
@@ -681,20 +680,25 @@ func sortStringsCaseInsensitive(values []string) {
 }
 
 func (r *consoleRunner) alertCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: alert <message>")
+		return nil
+	}
+
 	proxy := r.javaProxy()
 	if proxy == nil {
 		fmt.Fprintln(r.writer, "Java proxy not available yet.")
 		return nil
 	}
 
-	cfg := proxy.Config()
-	if cfg.Lite.Enabled {
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "Alert command is not available in Gate Lite mode.")
 		return nil
 	}
 
-	if len(args) == 0 {
-		fmt.Fprintln(r.writer, "Usage: alert <message>")
+	players := proxy.Players()
+	if len(players) == 0 {
+		fmt.Fprintln(r.writer, "No players online to receive the alert.")
 		return nil
 	}
 
@@ -702,12 +706,6 @@ func (r *consoleRunner) alertCommand(args []string) error {
 	alertMsg := &component.Text{
 		Content: "[ALERT] " + message,
 		S:       component.Style{Color: component.Red, Bold: component.True},
-	}
-
-	players := proxy.Players()
-	if len(players) == 0 {
-		fmt.Fprintln(r.writer, "No players online to receive the alert.")
-		return nil
 	}
 
 	count := 0
@@ -722,27 +720,25 @@ func (r *consoleRunner) alertCommand(args []string) error {
 }
 
 func (r *consoleRunner) findCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: find <player>")
+		return nil
+	}
+
 	proxy := r.javaProxy()
 	if proxy == nil {
 		fmt.Fprintln(r.writer, "Java proxy not available yet.")
 		return nil
 	}
 
-	cfg := proxy.Config()
-	if cfg.Lite.Enabled {
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "Find command is not available in Gate Lite mode.")
 		return nil
 	}
 
-	if len(args) == 0 {
-		fmt.Fprintln(r.writer, "Usage: find <player>")
-		return nil
-	}
-
-	playerName := args[0]
-	player := proxy.PlayerByName(playerName)
+	player := proxy.PlayerByName(args[0])
 	if player == nil {
-		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", playerName)
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", args[0])
 		return nil
 	}
 
@@ -758,27 +754,25 @@ func (r *consoleRunner) findCommand(args []string) error {
 }
 
 func (r *consoleRunner) ipCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: ip <player>")
+		return nil
+	}
+
 	proxy := r.javaProxy()
 	if proxy == nil {
 		fmt.Fprintln(r.writer, "Java proxy not available yet.")
 		return nil
 	}
 
-	cfg := proxy.Config()
-	if cfg.Lite.Enabled {
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "IP command is not available in Gate Lite mode.")
 		return nil
 	}
 
-	if len(args) == 0 {
-		fmt.Fprintln(r.writer, "Usage: ip <player>")
-		return nil
-	}
-
-	playerName := args[0]
-	player := proxy.PlayerByName(playerName)
+	player := proxy.PlayerByName(args[0])
 	if player == nil {
-		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", playerName)
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", args[0])
 		return nil
 	}
 
