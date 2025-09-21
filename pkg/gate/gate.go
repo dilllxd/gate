@@ -121,6 +121,10 @@ func New(options Options) (gate *Gate, err error) {
 		return nil, err
 	}
 
+	if err = gate.proc.Add(newConsoleRunner(gate)); err != nil {
+		return nil, err
+	}
+
 	return gate, nil
 }
 

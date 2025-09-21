@@ -43,6 +43,7 @@ require (
 	golang.org/x/exp v0.0.0-20241108190413-2d47ceb2692f
 	golang.org/x/net v0.39.0
 	golang.org/x/sync v0.13.0
+	golang.org/x/term v0.31.0
 	golang.org/x/text v0.24.0
 	golang.org/x/time v0.11.0
 	google.golang.org/grpc v1.72.0
