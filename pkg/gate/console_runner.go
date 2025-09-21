@@ -230,69 +230,26 @@ func (r *consoleRunner) printHelp() {
 	proxy := r.javaProxy()
 	liteEnabled := proxy != nil && proxy.Config().Lite.Enabled
 
-	fmt.Fprintln(r.writer, "")
-	fmt.Fprintln(r.writer, "═══════════════════════════════════════════════════════════════")
 	if liteEnabled {
-		fmt.Fprintln(r.writer, "                    GATE LITE CONSOLE COMMANDS")
+		fmt.Fprintln(r.writer, "Available commands:")
+		fmt.Fprintln(r.writer, "help - Show available commands")
+		fmt.Fprintln(r.writer, "routes - Show Gate Lite route configuration")
+		fmt.Fprintln(r.writer, "stop [reason] - Gracefully stop Gate")
 	} else {
-		fmt.Fprintln(r.writer, "                     GATE CONSOLE COMMANDS")
+		fmt.Fprintln(r.writer, "Available commands:")
+		fmt.Fprintln(r.writer, "help - Show available commands")
+		fmt.Fprintln(r.writer, "list - List all online players")
+		fmt.Fprintln(r.writer, "glist [server|player] - List players by server or show player info")
+		fmt.Fprintln(r.writer, "servers - List registered backend servers")
+		fmt.Fprintln(r.writer, "kick <player> [reason] - Disconnect a player")
+		fmt.Fprintln(r.writer, "move <player|server> <server> - Move a player or all players from a server")
+		fmt.Fprintln(r.writer, "alert <message> - Send an alert message to all online players")
+		fmt.Fprintln(r.writer, "find <player> - Find which server a player is connected to")
+		fmt.Fprintln(r.writer, "ip <player> - Show a player's IP address")
+		fmt.Fprintln(r.writer, "reload - Show information about automatic config reload")
+		fmt.Fprintln(r.writer, "info - Show Gate version and system information")
+		fmt.Fprintln(r.writer, "stop [reason] - Gracefully stop Gate")
 	}
-	fmt.Fprintln(r.writer, "═══════════════════════════════════════════════════════════════")
-	fmt.Fprintln(r.writer, "")
-
-	if liteEnabled {
-		r.printCommand("help", "", "Show this help message")
-		r.printCommand("routes", "", "Show Gate Lite route configuration")
-		r.printCommand("stop", "[reason]", "Gracefully stop Gate with optional reason")
-	} else {
-		fmt.Fprintln(r.writer, "Player Management:")
-		fmt.Fprintln(r.writer, "─────────────────")
-		r.printCommand("list", "", "List all online players (sorted)")
-		r.printCommand("glist", "[server|player]", "Smart server/player info lookup")
-		r.printCommand("kick", "<player> [reason]", "Disconnect player with optional reason")
-		r.printCommand("move", "<player|server> <dest>", "Move player or server players")
-		r.printCommand("find", "<player>", "Find which server a player is on")
-		r.printCommand("ip", "<player>", "Show player's IP address")
-
-		fmt.Fprintln(r.writer, "")
-		fmt.Fprintln(r.writer, "Communication:")
-		fmt.Fprintln(r.writer, "─────────────")
-		r.printCommand("alert", "<message>", "Send styled alert to all players")
-
-		fmt.Fprintln(r.writer, "")
-		fmt.Fprintln(r.writer, "Administration:")
-		fmt.Fprintln(r.writer, "───────────────")
-		r.printCommand("servers", "", "List backend servers with player counts")
-		r.printCommand("info", "", "Show Gate version and system info")
-		r.printCommand("reload", "", "Info about automatic config reload")
-		r.printCommand("stop", "[reason]", "Gracefully stop Gate")
-
-		fmt.Fprintln(r.writer, "")
-		fmt.Fprintln(r.writer, "General:")
-		fmt.Fprintln(r.writer, "────────")
-		r.printCommand("help", "", "Show this help message")
-	}
-
-	fmt.Fprintln(r.writer, "")
-	fmt.Fprintln(r.writer, "═══════════════════════════════════════════════════════════════")
-	if liteEnabled {
-		fmt.Fprintln(r.writer, "Note: Gate Lite mode provides essential proxy functionality only")
-	} else {
-		fmt.Fprintln(r.writer, "Tip: Use 'player:name' or 'server:name' in move command to avoid")
-		fmt.Fprintln(r.writer, "     ambiguity. Bedrock player names may start with '*'")
-	}
-	fmt.Fprintln(r.writer, "═══════════════════════════════════════════════════════════════")
-	fmt.Fprintln(r.writer, "")
-}
-
-func (r *consoleRunner) printCommand(command, args, description string) {
-	cmdPart := command
-	if args != "" {
-		cmdPart += " " + args
-	}
-
-	// Pad command part to 25 characters for consistent alignment
-	fmt.Fprintf(r.writer, "  %-25s %s\n", cmdPart, description)
 }
 
 func (r *consoleRunner) cmdList(_ []string) error {
