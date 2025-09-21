@@ -206,6 +206,16 @@ func (r *consoleRunner) execute(line string) error {
 		return r.kickPlayer(rest)
 	case "move", "send":
 		return r.moveCommand(rest)
+	case "alert", "broadcast":
+		return r.alertCommand(rest)
+	case "find":
+		return r.findCommand(rest)
+	case "ip":
+		return r.ipCommand(rest)
+	case "reload":
+		return r.reloadCommand(rest)
+	case "info", "version":
+		return r.infoCommand(rest)
 	case "stop", "shutdown":
 		return r.stopGate(rest)
 	case "routes":
@@ -233,6 +243,11 @@ func (r *consoleRunner) printHelp() {
 			"servers            - List registered backend servers",
 			"kick <player> [reason] - Disconnect a player with an optional reason",
 			"move <player|server> <server> - Move a player or all players to another server",
+			"alert <message>    - Send an alert message to all online players",
+			"find <player>      - Find which server a player is connected to",
+			"ip <player>        - Show a player's IP address",
+			"reload             - Reload Gate configuration",
+			"info               - Show Gate version and system information",
 			"stop [reason]      - Gracefully stop Gate",
 		)
 	}
@@ -668,4 +683,152 @@ func sortStringsCaseInsensitive(values []string) {
 	sort.Slice(values, func(i, j int) bool {
 		return strings.ToLower(values[i]) < strings.ToLower(values[j])
 	})
+}
+
+func (r *consoleRunner) alertCommand(args []string) error {
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	cfg := proxy.Config()
+	if cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "Alert command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: alert <message>")
+		return nil
+	}
+
+	message := strings.Join(args, " ")
+	alertMsg := &component.Text{
+		Content: "[ALERT] " + message,
+		S:       component.Style{Color: component.Red, Bold: component.True},
+	}
+
+	players := proxy.Players()
+	if len(players) == 0 {
+		fmt.Fprintln(r.writer, "No players online to receive the alert.")
+		return nil
+	}
+
+	count := 0
+	for _, player := range players {
+		if err := player.SendMessage(alertMsg); err == nil {
+			count++
+		}
+	}
+
+	fmt.Fprintf(r.writer, "Alert sent to %d/%d online players: %s\n", count, len(players), message)
+	return nil
+}
+
+func (r *consoleRunner) findCommand(args []string) error {
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	cfg := proxy.Config()
+	if cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "Find command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: find <player>")
+		return nil
+	}
+
+	playerName := args[0]
+	player := proxy.PlayerByName(playerName)
+	if player == nil {
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", playerName)
+		return nil
+	}
+
+	if conn := player.CurrentServer(); conn != nil && conn.Server() != nil {
+		server := conn.Server().ServerInfo()
+		fmt.Fprintf(r.writer, "Player '%s' is connected to server '%s' (%s)\n",
+			player.Username(), server.Name(), server.Addr().String())
+	} else {
+		fmt.Fprintf(r.writer, "Player '%s' is online but not connected to any server (pending).\n", player.Username())
+	}
+
+	return nil
+}
+
+func (r *consoleRunner) ipCommand(args []string) error {
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	cfg := proxy.Config()
+	if cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "IP command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: ip <player>")
+		return nil
+	}
+
+	playerName := args[0]
+	player := proxy.PlayerByName(playerName)
+	if player == nil {
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", playerName)
+		return nil
+	}
+
+	if addr := player.RemoteAddress(); addr != nil {
+		fmt.Fprintf(r.writer, "Player '%s' IP address: %s\n", player.Username(), addr.String())
+	} else {
+		fmt.Fprintf(r.writer, "Unable to retrieve IP address for player '%s'.\n", player.Username())
+	}
+
+	return nil
+}
+
+func (r *consoleRunner) reloadCommand(args []string) error {
+	fmt.Fprintln(r.writer, "Config reload is not yet implemented.")
+	fmt.Fprintln(r.writer, "Please restart Gate to apply configuration changes.")
+	return nil
+}
+
+func (r *consoleRunner) infoCommand(args []string) error {
+	fmt.Fprintln(r.writer, "Gate Proxy Information:")
+	fmt.Fprintln(r.writer, "  Version: Gate (build info not available)")
+
+	proxy := r.javaProxy()
+	if proxy != nil {
+		players := proxy.Players()
+		servers := proxy.Servers()
+		fmt.Fprintf(r.writer, "  Players online: %d\n", len(players))
+		fmt.Fprintf(r.writer, "  Registered servers: %d\n", len(servers))
+
+		cfg := proxy.Config()
+		if cfg.Lite.Enabled {
+			fmt.Fprintln(r.writer, "  Mode: Gate Lite")
+			fmt.Fprintf(r.writer, "  Lite routes: %d\n", len(cfg.Lite.Routes))
+		} else {
+			fmt.Fprintln(r.writer, "  Mode: Full proxy")
+		}
+	}
+
+	if r.gate != nil {
+		if bedrock := r.gate.Bedrock(); bedrock != nil {
+			fmt.Fprintln(r.writer, "  Bedrock support: Enabled")
+		} else {
+			fmt.Fprintln(r.writer, "  Bedrock support: Disabled")
+		}
+	}
+
+	return nil
 }
