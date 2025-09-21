@@ -416,8 +416,14 @@ func (r *consoleRunner) listRoutes() error {
 
 	fmt.Fprintf(r.writer, "Lite routes (%d):\n", len(routes))
 	for idx, route := range routes {
-		hosts := route.Host.Multi()
-		backends := route.Backend.Multi()
+		var hosts, backends []string
+		if route.Host != nil {
+			hosts = route.Host.Multi()
+		}
+		if route.Backend != nil {
+			backends = route.Backend.Multi()
+		}
+
 		hostStr := "<none>"
 		if len(hosts) > 0 {
 			hostStr = strings.Join(hosts, ", ")
@@ -464,11 +470,6 @@ func (r *consoleRunner) stopGate(args []string) error {
 }
 
 func (r *consoleRunner) kickPlayer(args []string) error {
-	if len(args) == 0 {
-		fmt.Fprintln(r.writer, "Usage: kick <player> [reason]")
-		return nil
-	}
-
 	proxy := r.javaProxy()
 	if proxy == nil {
 		fmt.Fprintln(r.writer, "Java proxy not available yet.")
@@ -478,6 +479,11 @@ func (r *consoleRunner) kickPlayer(args []string) error {
 	cfg := proxy.Config()
 	if cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "Kick command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: kick <player> [reason]")
 		return nil
 	}
 
@@ -522,7 +528,7 @@ func (r *consoleRunner) moveCommand(args []string) error {
 	}
 
 	timeout := time.Millisecond * time.Duration(cfg.ConnectionTimeout)
-	if timeout <= 0 {
+	if timeout <= 100*time.Millisecond {
 		timeout = 5 * time.Second
 	}
 
