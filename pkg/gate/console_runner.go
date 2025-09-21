@@ -797,8 +797,9 @@ func (r *consoleRunner) ipCommand(args []string) error {
 }
 
 func (r *consoleRunner) reloadCommand(args []string) error {
-	fmt.Fprintln(r.writer, "Config reload is not yet implemented.")
-	fmt.Fprintln(r.writer, "Please restart Gate to apply configuration changes.")
+	fmt.Fprintln(r.writer, "Gate has automatic configuration reload enabled by default.")
+	fmt.Fprintln(r.writer, "Configuration changes are automatically detected and applied.")
+	fmt.Fprintln(r.writer, "No manual reload command is necessary.")
 	return nil
 }
 
