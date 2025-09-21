@@ -16,6 +16,7 @@ import (
 	"github.com/go-logr/logr"
 	"golang.org/x/term"
 
+	"go.minekube.com/common/minecraft/color"
 	"go.minekube.com/common/minecraft/component"
 	jproxy "go.minekube.com/gate/pkg/edition/java/proxy"
 	"go.minekube.com/gate/pkg/runtime/process"
@@ -317,9 +318,9 @@ func (r *consoleRunner) showPlayerInfo(player jproxy.Player) error {
 		fmt.Fprintln(r.writer, "  Current server: pending connection")
 	}
 
-	fmt.Fprintf(r.writer, "  Protocol version: %d\n", player.ProtocolVersion())
-	if player.RemoteAddress() != nil {
-		fmt.Fprintf(r.writer, "  Remote address: %s\n", player.RemoteAddress().String())
+	fmt.Fprintf(r.writer, "  Protocol version: %d\n", player.Protocol().Protocol)
+	if player.RemoteAddr() != nil {
+		fmt.Fprintf(r.writer, "  Remote address: %s\n", player.RemoteAddr().String())
 	}
 
 	return nil
@@ -710,7 +711,7 @@ func (r *consoleRunner) alertCommand(args []string) error {
 	message := strings.Join(args, " ")
 	alertMsg := &component.Text{
 		Content: "[ALERT] " + message,
-		S:       component.Style{Color: component.Red, Bold: component.True},
+		S:       component.Style{Color: color.Red, Bold: component.True},
 	}
 
 	count := 0
@@ -781,7 +782,7 @@ func (r *consoleRunner) ipCommand(args []string) error {
 		return nil
 	}
 
-	if addr := player.RemoteAddress(); addr != nil {
+	if addr := player.RemoteAddr(); addr != nil {
 		fmt.Fprintf(r.writer, "Player '%s' IP address: %s\n", player.Username(), addr.String())
 	} else {
 		fmt.Fprintf(r.writer, "Unable to retrieve IP address for player '%s'.\n", player.Username())
