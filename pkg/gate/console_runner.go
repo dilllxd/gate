@@ -142,6 +142,21 @@ func (r *consoleRunner) execute(line string) error {
 	cmd := strings.ToLower(args[0])
 	rest := args[1:]
 
+	proxy := r.javaProxy()
+	liteEnabled := proxy != nil && proxy.Config().Lite.Enabled
+
+	if liteEnabled {
+		switch cmd {
+		case "help", "?":
+			r.printHelp()
+		case "routes":
+			return r.listRoutes()
+		default:
+			fmt.Fprintf(r.writer, "Command '%s' is not available in Gate Lite mode. Type 'help' for supported commands.\n", cmd)
+		}
+		return nil
+	}
+
 	switch cmd {
 	case "help", "?":
 		r.printHelp()
@@ -151,12 +166,12 @@ func (r *consoleRunner) execute(line string) error {
 		return r.cmdGList(rest)
 	case "servers":
 		return r.listServers()
-	case "routes":
-		return r.listRoutes()
 	case "kick":
 		return r.kickPlayer(rest)
 	case "move", "send":
 		return r.moveCommand(rest)
+	case "routes":
+		fmt.Fprintln(r.writer, "Command 'routes' is only available in Gate Lite mode.")
 	default:
 		fmt.Fprintf(r.writer, "Unknown command '%s'. Type 'help' for a list.\n", cmd)
 	}
@@ -177,7 +192,6 @@ func (r *consoleRunner) printHelp() {
 			"servers            - List registered backend servers",
 			"kick <player> [reason] - Disconnect a player with an optional reason",
 			"move <player|server> <server> - Move a player or all players to another server",
-			"routes             - Show Gate Lite route configuration",
 		)
 	}
 
