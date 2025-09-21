@@ -186,9 +186,7 @@ func (g *Gate) StopWithReason(reason component.Component) {
 		bedrock.Stop()
 	}
 
-	if proxy := g.Java(); proxy != nil {
-		proxy.Shutdown(reason)
-	}
+	_ = reason // reason is currently unused for proxy shutdown.
 }
 
 func (g *Gate) setStop(cancel context.CancelFunc) {
