@@ -318,7 +318,7 @@ func (r *consoleRunner) showPlayerInfo(player jproxy.Player) error {
 		fmt.Fprintln(r.writer, "  Current server: pending connection")
 	}
 
-	fmt.Fprintf(r.writer, "  Protocol version: %d\n", player.Protocol().Protocol)
+	fmt.Fprintf(r.writer, "  Protocol version: %d\n", int(player.Protocol()))
 	if player.RemoteAddr() != nil {
 		fmt.Fprintf(r.writer, "  Remote address: %s\n", player.RemoteAddr().String())
 	}
