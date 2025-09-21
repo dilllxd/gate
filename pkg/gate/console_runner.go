@@ -97,7 +97,30 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 		defer close(lines)
 
 		scanner := bufio.NewScanner(r.reader)
-		for scanner.Scan() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				// Non-blocking check for context cancellation
+			}
+
+			if !scanner.Scan() {
+				// Scanner finished or errored
+				if err := scanner.Err(); err != nil {
+					select {
+					case lines <- incoming{err: err}:
+					case <-ctx.Done():
+					}
+				} else {
+					select {
+					case lines <- incoming{err: io.EOF}:
+					case <-ctx.Done():
+					}
+				}
+				return
+			}
+
 			text := scanner.Text()
 			select {
 			case lines <- incoming{line: text}:
@@ -105,21 +128,24 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 				return
 			}
 		}
+	}()
 
-		// Handle scanner completion or error
-		if err := scanner.Err(); err != nil {
-			select {
-			case lines <- incoming{err: err}:
-			case <-ctx.Done():
-			}
-		} else {
-			select {
-			case lines <- incoming{err: io.EOF}:
-			case <-ctx.Done():
-			}
+	defer func() {
+		// Give goroutines a brief moment to clean up
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			// All goroutines finished cleanly
+		case <-time.After(1 * time.Second):
+			// Timeout waiting for goroutines - they may be blocked on scanner.Scan()
+			// This is acceptable as the process is shutting down anyway
 		}
 	}()
-	defer wg.Wait()
 
 	for {
 		select {
