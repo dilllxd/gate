@@ -59,8 +59,10 @@ func newConsoleRunner(g *Gate) process.Runnable {
 func (r *consoleRunner) Start(ctx context.Context) error {
 	log := logr.FromContextOrDiscard(ctx).WithName("console")
 
-	if file, ok := r.reader.(*os.File); ok {
-		r.isTTY.Store(term.IsTerminal(int(file.Fd())))
+	if file, ok := r.reader.(*os.File); ok && file != nil {
+		if fd := file.Fd(); fd >= 0 {
+			r.isTTY.Store(term.IsTerminal(int(fd)))
+		}
 	}
 
 	if !r.isTTY.Load() {
@@ -79,20 +81,42 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 
 	lines := make(chan incoming, 1)
 	var wg sync.WaitGroup
-	wg.Add(1)
+	wg.Add(2) // Track both scanner and context cancellation goroutines
+
+	// Context cancellation goroutine - tracked by WaitGroup
 	go func() {
 		defer wg.Done()
+		<-ctx.Done()
+		r.closeReader()
+	}()
+
+	// Scanner goroutine
+	go func() {
+		defer wg.Done()
+		defer close(lines)
+
 		scanner := bufio.NewScanner(r.reader)
 		for scanner.Scan() {
 			text := scanner.Text()
-			lines <- incoming{line: text}
+			select {
+			case lines <- incoming{line: text}:
+			case <-ctx.Done():
+				return
+			}
 		}
+
+		// Handle scanner completion or error
 		if err := scanner.Err(); err != nil {
-			lines <- incoming{err: err}
+			select {
+			case lines <- incoming{err: err}:
+			case <-ctx.Done():
+			}
 		} else {
-			lines <- incoming{err: io.EOF}
+			select {
+			case lines <- incoming{err: io.EOF}:
+			case <-ctx.Done():
+			}
 		}
-		close(lines)
 	}()
 	defer wg.Wait()
 
@@ -123,9 +147,12 @@ func (r *consoleRunner) Start(ctx context.Context) error {
 					r.closeReader()
 					return nil
 				}
-			} else if !r.stopping.Load() {
-				r.printPrompt()
 			}
+			if r.stopping.Load() {
+				r.closeReader()
+				return nil
+			}
+			r.printPrompt()
 		}
 	}
 }
@@ -184,6 +211,16 @@ func (r *consoleRunner) execute(line string) error {
 		return r.kickPlayer(rest)
 	case "move", "send":
 		return r.moveCommand(rest)
+	case "alert", "broadcast":
+		return r.alertCommand(rest)
+	case "find":
+		return r.findCommand(rest)
+	case "ip":
+		return r.ipCommand(rest)
+	case "reload":
+		return r.reloadCommand(rest)
+	case "info", "version":
+		return r.infoCommand(rest)
 	case "stop", "shutdown":
 		return r.stopGate(rest)
 	case "routes":
@@ -198,25 +235,25 @@ func (r *consoleRunner) printHelp() {
 	proxy := r.javaProxy()
 	liteEnabled := proxy != nil && proxy.Config().Lite.Enabled
 
-	lines := []string{"help               - Show this message"}
 	if liteEnabled {
-		lines = append(lines,
-			"routes             - Show Gate Lite route configuration",
-			"stop [reason]      - Gracefully stop Gate",
-		)
+		fmt.Fprintln(r.writer, "Available commands:")
+		fmt.Fprintln(r.writer, "help - Show available commands")
+		fmt.Fprintln(r.writer, "routes - Show Gate Lite route configuration")
+		fmt.Fprintln(r.writer, "stop [reason] - Gracefully stop Gate")
 	} else {
-		lines = append(lines,
-			"list               - List all online players",
-			"glist [server]     - List players by server or show players on a server",
-			"servers            - List registered backend servers",
-			"kick <player> [reason] - Disconnect a player with an optional reason",
-			"move <player|server> <server> - Move a player or all players to another server",
-			"stop [reason]      - Gracefully stop Gate",
-		)
-	}
-
-	for _, l := range lines {
-		fmt.Fprintln(r.writer, l)
+		fmt.Fprintln(r.writer, "Available commands:")
+		fmt.Fprintln(r.writer, "help - Show available commands")
+		fmt.Fprintln(r.writer, "list - List all online players")
+		fmt.Fprintln(r.writer, "glist [server|player] - List players by server or show player info")
+		fmt.Fprintln(r.writer, "servers - List registered backend servers")
+		fmt.Fprintln(r.writer, "kick <player> [reason] - Disconnect a player")
+		fmt.Fprintln(r.writer, "move <player|server> <server> - Move a player or all players from a server")
+		fmt.Fprintln(r.writer, "alert <message> - Send an alert message to all online players")
+		fmt.Fprintln(r.writer, "find <player> - Find which server a player is connected to")
+		fmt.Fprintln(r.writer, "ip <player> - Show a player's IP address")
+		fmt.Fprintln(r.writer, "reload - Show information about automatic config reload")
+		fmt.Fprintln(r.writer, "info - Show Gate version and system information")
+		fmt.Fprintln(r.writer, "stop [reason] - Gracefully stop Gate")
 	}
 }
 
@@ -253,13 +290,39 @@ func (r *consoleRunner) cmdGList(args []string) error {
 		return r.listPlayersByServer(proxy)
 	}
 
-	target := proxy.Server(args[0])
-	if target == nil {
-		fmt.Fprintf(r.writer, "Server '%s' is not registered.\n", args[0])
-		return nil
+	targetName := args[0]
+
+	// Try to find as server first
+	if server := proxy.Server(targetName); server != nil {
+		return r.listPlayersOnServer(server)
 	}
 
-	return r.listPlayersOnServer(target)
+	// Try to find as player
+	if player := proxy.PlayerByName(targetName); player != nil {
+		return r.showPlayerInfo(player)
+	}
+
+	fmt.Fprintf(r.writer, "No server or player named '%s' found.\n", targetName)
+	return nil
+}
+
+func (r *consoleRunner) showPlayerInfo(player jproxy.Player) error {
+	// Player.Username() returns the exact username including Bedrock '*' prefix if present
+	fmt.Fprintf(r.writer, "Player: %s\n", player.Username())
+
+	if conn := player.CurrentServer(); conn != nil && conn.Server() != nil {
+		server := conn.Server().ServerInfo()
+		fmt.Fprintf(r.writer, "  Current server: %s (%s)\n", server.Name(), server.Addr().String())
+	} else {
+		fmt.Fprintln(r.writer, "  Current server: pending connection")
+	}
+
+	fmt.Fprintf(r.writer, "  Protocol version: %d\n", player.ProtocolVersion())
+	if player.RemoteAddress() != nil {
+		fmt.Fprintf(r.writer, "  Remote address: %s\n", player.RemoteAddress().String())
+	}
+
+	return nil
 }
 
 func (r *consoleRunner) javaProxy() *jproxy.Proxy {
@@ -394,8 +457,14 @@ func (r *consoleRunner) listRoutes() error {
 
 	fmt.Fprintf(r.writer, "Lite routes (%d):\n", len(routes))
 	for idx, route := range routes {
-		hosts := route.Host.Multi()
-		backends := route.Backend.Multi()
+		var hosts, backends []string
+		if route.Host != nil {
+			hosts = route.Host.Multi()
+		}
+		if route.Backend != nil {
+			backends = route.Backend.Multi()
+		}
+
 		hostStr := "<none>"
 		if len(hosts) > 0 {
 			hostStr = strings.Join(hosts, ", ")
@@ -453,8 +522,7 @@ func (r *consoleRunner) kickPlayer(args []string) error {
 		return nil
 	}
 
-	cfg := proxy.Config()
-	if cfg.Lite.Enabled {
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
 		fmt.Fprintln(r.writer, "Kick command is not available in Gate Lite mode.")
 		return nil
 	}
@@ -478,6 +546,9 @@ func (r *consoleRunner) kickPlayer(args []string) error {
 func (r *consoleRunner) moveCommand(args []string) error {
 	if len(args) < 2 {
 		fmt.Fprintln(r.writer, "Usage: move <player|server> <server>")
+		fmt.Fprintln(r.writer, "       move server:<server_name> <destination>  (force server mode)")
+		fmt.Fprintln(r.writer, "       move player:<player_name> <destination>  (force player mode)")
+		fmt.Fprintln(r.writer, "Note: Bedrock player names may start with '*' - include the full name")
 		return nil
 	}
 
@@ -500,17 +571,50 @@ func (r *consoleRunner) moveCommand(args []string) error {
 	}
 
 	timeout := time.Millisecond * time.Duration(cfg.ConnectionTimeout)
-	if timeout <= 0 {
+	if timeout <= 100*time.Millisecond {
 		timeout = 5 * time.Second
 	}
 
 	subject := args[0]
-	if player := proxy.PlayerByName(subject); player != nil {
+
+	// Handle explicit prefixes for disambiguation
+	if strings.HasPrefix(subject, "server:") {
+		serverName := strings.TrimPrefix(subject, "server:")
+		r.moveServerPlayers(proxy, serverName, destination, timeout)
+		return nil
+	}
+	if strings.HasPrefix(subject, "player:") {
+		playerName := strings.TrimPrefix(subject, "player:")
+		if player := proxy.PlayerByName(playerName); player != nil {
+			r.moveSinglePlayer(player, destination, timeout)
+			return nil
+		}
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", playerName)
+		return nil
+	}
+
+	// Smart resolution: check both player and server
+	player := proxy.PlayerByName(subject)
+	server := proxy.Server(subject)
+
+	if player != nil && server != nil {
+		// Ambiguous case - both exist
+		fmt.Fprintf(r.writer, "Ambiguous: both player '%s' and server '%s' exist.\n", subject, subject)
+		fmt.Fprintln(r.writer, "Use 'move player:"+subject+"' or 'move server:"+subject+"' to specify.")
+		return nil
+	}
+
+	if player != nil {
 		r.moveSinglePlayer(player, destination, timeout)
 		return nil
 	}
 
-	r.moveServerPlayers(proxy, subject, destination, timeout)
+	if server != nil {
+		r.moveServerPlayers(proxy, subject, destination, timeout)
+		return nil
+	}
+
+	fmt.Fprintf(r.writer, "No player or server named '%s' found.\n", subject)
 	return nil
 }
 
@@ -578,4 +682,148 @@ func sortStringsCaseInsensitive(values []string) {
 	sort.Slice(values, func(i, j int) bool {
 		return strings.ToLower(values[i]) < strings.ToLower(values[j])
 	})
+}
+
+func (r *consoleRunner) alertCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: alert <message>")
+		return nil
+	}
+
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "Alert command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	players := proxy.Players()
+	if len(players) == 0 {
+		fmt.Fprintln(r.writer, "No players online to receive the alert.")
+		return nil
+	}
+
+	message := strings.Join(args, " ")
+	alertMsg := &component.Text{
+		Content: "[ALERT] " + message,
+		S:       component.Style{Color: component.Red, Bold: component.True},
+	}
+
+	count := 0
+	for _, player := range players {
+		if err := player.SendMessage(alertMsg); err == nil {
+			count++
+		}
+	}
+
+	fmt.Fprintf(r.writer, "Alert sent to %d/%d online players: %s\n", count, len(players), message)
+	return nil
+}
+
+func (r *consoleRunner) findCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: find <player>")
+		return nil
+	}
+
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "Find command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	player := proxy.PlayerByName(args[0])
+	if player == nil {
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", args[0])
+		return nil
+	}
+
+	if conn := player.CurrentServer(); conn != nil && conn.Server() != nil {
+		server := conn.Server().ServerInfo()
+		fmt.Fprintf(r.writer, "Player '%s' is connected to server '%s' (%s)\n",
+			player.Username(), server.Name(), server.Addr().String())
+	} else {
+		fmt.Fprintf(r.writer, "Player '%s' is online but not connected to any server (pending).\n", player.Username())
+	}
+
+	return nil
+}
+
+func (r *consoleRunner) ipCommand(args []string) error {
+	if len(args) == 0 {
+		fmt.Fprintln(r.writer, "Usage: ip <player>")
+		return nil
+	}
+
+	proxy := r.javaProxy()
+	if proxy == nil {
+		fmt.Fprintln(r.writer, "Java proxy not available yet.")
+		return nil
+	}
+
+	if cfg := proxy.Config(); cfg.Lite.Enabled {
+		fmt.Fprintln(r.writer, "IP command is not available in Gate Lite mode.")
+		return nil
+	}
+
+	player := proxy.PlayerByName(args[0])
+	if player == nil {
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", args[0])
+		return nil
+	}
+
+	if addr := player.RemoteAddress(); addr != nil {
+		fmt.Fprintf(r.writer, "Player '%s' IP address: %s\n", player.Username(), addr.String())
+	} else {
+		fmt.Fprintf(r.writer, "Unable to retrieve IP address for player '%s'.\n", player.Username())
+	}
+
+	return nil
+}
+
+func (r *consoleRunner) reloadCommand(args []string) error {
+	fmt.Fprintln(r.writer, "Gate has automatic configuration reload enabled by default.")
+	fmt.Fprintln(r.writer, "Configuration changes are automatically detected and applied.")
+	fmt.Fprintln(r.writer, "No manual reload command is necessary.")
+	return nil
+}
+
+func (r *consoleRunner) infoCommand(args []string) error {
+	fmt.Fprintln(r.writer, "Gate Proxy Information:")
+	fmt.Fprintln(r.writer, "  Version: Gate (build info not available)")
+
+	proxy := r.javaProxy()
+	if proxy != nil {
+		players := proxy.Players()
+		servers := proxy.Servers()
+		fmt.Fprintf(r.writer, "  Players online: %d\n", len(players))
+		fmt.Fprintf(r.writer, "  Registered servers: %d\n", len(servers))
+
+		cfg := proxy.Config()
+		if cfg.Lite.Enabled {
+			fmt.Fprintln(r.writer, "  Mode: Gate Lite")
+			fmt.Fprintf(r.writer, "  Lite routes: %d\n", len(cfg.Lite.Routes))
+		} else {
+			fmt.Fprintln(r.writer, "  Mode: Full proxy")
+		}
+	}
+
+	if r.gate != nil {
+		if bedrock := r.gate.Bedrock(); bedrock != nil {
+			fmt.Fprintln(r.writer, "  Bedrock support: Enabled")
+		} else {
+			fmt.Fprintln(r.writer, "  Bedrock support: Disabled")
+		}
+	}
+
+	return nil
 }
