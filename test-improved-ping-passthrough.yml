@@ -1,0 +1,20 @@
+config:
+  bind: 0.0.0.0:25565
+  onlineMode: false
+  servers:
+    vanilla:
+      address: localhost:25566
+      passthroughMotd: true
+    fabric:
+      address: localhost:25567
+      passthroughMotd: true
+    neoforge:
+      address: localhost:25568
+      passthroughMotd: true
+  try:
+    - fabric     # With the improved logic, this will be used for the default domain (not forced hosts)
+    - vanilla
+  forcedHosts:
+    "snapshot.miniverse.fr": ["vanilla"]
+    "fabric.miniverse.fr": ["fabric"]
+    "forge.miniverse.fr": ["neoforge"]

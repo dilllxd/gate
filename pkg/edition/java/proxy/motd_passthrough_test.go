@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"errors"
+	"net"
 	"syscall"
 	"testing"
 
@@ -102,11 +103,58 @@ func TestFindPassthroughServer(t *testing.T) {
 	tests := []struct {
 		name                    string
 		setupConfig            func() *config.Config
+		virtualHost            string // hostname for testing forced hosts
 		expectedServerName     string
 		expectedServerConfig   *config.ServerConfig
 	}{
 		{
-			name: "finds first server in Try list with passthrough enabled",
+			name: "finds server from forcedHosts when virtual host matches",
+			setupConfig: func() *config.Config {
+				return &config.Config{
+					Servers: config.ServerConfigs{
+						"vanilla":  {Address: "localhost:25566", PassthroughMOTD: true},
+						"fabric":   {Address: "localhost:25567", PassthroughMOTD: true},
+						"neoforge": {Address: "localhost:25568", PassthroughMOTD: true},
+					},
+					Try: []string{"fabric", "vanilla"},
+					ForcedHosts: map[string][]string{
+						"snapshot.miniverse.fr": {"vanilla"},
+						"fabric.miniverse.fr":   {"fabric"},
+						"forge.miniverse.fr":    {"neoforge"},
+					},
+				}
+			},
+			virtualHost:        "snapshot.miniverse.fr:25565",
+			expectedServerName: "vanilla",
+			expectedServerConfig: &config.ServerConfig{
+				Address:         "localhost:25566",
+				PassthroughMOTD: true,
+			},
+		},
+		{
+			name: "falls back to Try list when virtual host doesn't match forcedHosts",
+			setupConfig: func() *config.Config {
+				return &config.Config{
+					Servers: config.ServerConfigs{
+						"vanilla":  {Address: "localhost:25566", PassthroughMOTD: false},
+						"fabric":   {Address: "localhost:25567", PassthroughMOTD: true},
+						"neoforge": {Address: "localhost:25568", PassthroughMOTD: true},
+					},
+					Try: []string{"fabric", "vanilla"},
+					ForcedHosts: map[string][]string{
+						"snapshot.miniverse.fr": {"vanilla"},
+					},
+				}
+			},
+			virtualHost:        "unknown.host.com:25565",
+			expectedServerName: "fabric",
+			expectedServerConfig: &config.ServerConfig{
+				Address:         "localhost:25567",
+				PassthroughMOTD: true,
+			},
+		},
+		{
+			name: "finds first server in Try list with passthrough enabled (no virtual host)",
 			setupConfig: func() *config.Config {
 				return &config.Config{
 					Servers: config.ServerConfigs{
@@ -117,6 +165,7 @@ func TestFindPassthroughServer(t *testing.T) {
 					Try: []string{"server2", "server3"},
 				}
 			},
+			virtualHost:        "", // No virtual host
 			expectedServerName: "server2",
 			expectedServerConfig: &config.ServerConfig{
 				Address:         "localhost:25562",
@@ -134,6 +183,7 @@ func TestFindPassthroughServer(t *testing.T) {
 					Try: []string{"server1", "server2"},
 				}
 			},
+			virtualHost:          "",
 			expectedServerName:   "",
 			expectedServerConfig: nil,
 		},
@@ -149,6 +199,7 @@ func TestFindPassthroughServer(t *testing.T) {
 					Try: []string{"server1", "server2"},
 				}
 			},
+			virtualHost:        "",
 			expectedServerName: "fallback",
 			expectedServerConfig: &config.ServerConfig{
 				Address:         "localhost:25563",
@@ -163,8 +214,30 @@ func TestFindPassthroughServer(t *testing.T) {
 					Try:     []string{},
 				}
 			},
+			virtualHost:          "",
 			expectedServerName:   "",
 			expectedServerConfig: nil,
+		},
+		{
+			name: "skips forcedHost server when it doesn't have passthrough enabled",
+			setupConfig: func() *config.Config {
+				return &config.Config{
+					Servers: config.ServerConfigs{
+						"vanilla": {Address: "localhost:25566", PassthroughMOTD: false}, // No passthrough
+						"fabric":  {Address: "localhost:25567", PassthroughMOTD: true},
+					},
+					Try: []string{"fabric"},
+					ForcedHosts: map[string][]string{
+						"snapshot.miniverse.fr": {"vanilla"}, // This server doesn't have passthrough
+					},
+				}
+			},
+			virtualHost:        "snapshot.miniverse.fr:25565",
+			expectedServerName: "fabric", // Should fall back to Try list
+			expectedServerConfig: &config.ServerConfig{
+				Address:         "localhost:25567",
+				PassthroughMOTD: true,
+			},
 		},
 	}
 
@@ -176,8 +249,14 @@ func TestFindPassthroughServer(t *testing.T) {
 				cfg: cfg,
 			}
 
+			// Create virtual host if provided
+			var virtualHost net.Addr = nil
+			if tt.virtualHost != "" {
+				virtualHost = &testNetAddr{address: tt.virtualHost}
+			}
+
 			// Test the function
-			serverConfig, serverName := proxy.findPassthroughServer()
+			serverConfig, serverName := proxy.findPassthroughServer(virtualHost)
 
 			// Verify results
 			assert.Equal(t, tt.expectedServerName, serverName, "Server name should match expected")
@@ -249,4 +328,59 @@ func (e *testError) Error() string {
 
 func (e *testError) Unwrap() error {
 	return e.Inner
+}
+
+// testNetAddr is a test implementation of net.Addr for testing virtual host processing
+type testNetAddr struct {
+	address string
+}
+
+func (t *testNetAddr) Network() string {
+	return "tcp"
+}
+
+func (t *testNetAddr) String() string {
+	return t.address
+}
+
+func TestGetVirtualHostnameFromAddr(t *testing.T) {
+	tests := []struct {
+		name         string
+		virtualHost  net.Addr
+		expectedHost string
+	}{
+		{
+			name:         "extracts hostname from address with port",
+			virtualHost:  &testNetAddr{address: "snapshot.miniverse.fr:25565"},
+			expectedHost: "snapshot.miniverse.fr",
+		},
+		{
+			name:         "extracts hostname from address without port",
+			virtualHost:  &testNetAddr{address: "fabric.miniverse.fr"},
+			expectedHost: "fabric.miniverse.fr",
+		},
+		{
+			name:         "handles localhost",
+			virtualHost:  &testNetAddr{address: "localhost:25565"},
+			expectedHost: "localhost",
+		},
+		{
+			name:         "returns empty string for nil virtual host",
+			virtualHost:  nil,
+			expectedHost: "",
+		},
+		{
+			name:         "converts to lowercase",
+			virtualHost:  &testNetAddr{address: "EXAMPLE.COM:25565"},
+			expectedHost: "example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			proxy := &Proxy{}
+			result := proxy.getVirtualHostnameFromAddr(tt.virtualHost)
+			assert.Equal(t, tt.expectedHost, result, "getVirtualHostnameFromAddr should extract correct hostname")
+		})
+	}
 }

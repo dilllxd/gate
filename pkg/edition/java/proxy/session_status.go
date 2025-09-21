@@ -118,7 +118,7 @@ func (h *statusSessionHandler) handleStatusRequest(pc *proto.PacketContext) {
 		// Classic mode: try MOTD passthrough first, fall back to proxy MOTD
 		var err error
 		var res *packet.StatusResponse
-		log, res, err = h.proxy.resolveMOTDPassthrough(h.log, pc)
+		log, res, err = h.proxy.resolveMOTDPassthrough(h.log, pc, h.inbound.VirtualHost())
 		if err != nil {
 			// MOTD passthrough failed or not enabled, use proxy's own MOTD
 			log.V(1).Info("MOTD passthrough not available, using proxy MOTD", "error", err)
