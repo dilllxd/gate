@@ -229,7 +229,7 @@ func (r *consoleRunner) printHelp() {
 	} else {
 		lines = append(lines,
 			"list               - List all online players",
-			"glist [server]     - List players by server or show players on a server",
+			"glist [server|player] - List players by server or show player/server info",
 			"servers            - List registered backend servers",
 			"kick <player> [reason] - Disconnect a player with an optional reason",
 			"move <player|server> <server> - Move a player or all players to another server",
@@ -275,13 +275,39 @@ func (r *consoleRunner) cmdGList(args []string) error {
 		return r.listPlayersByServer(proxy)
 	}
 
-	target := proxy.Server(args[0])
-	if target == nil {
-		fmt.Fprintf(r.writer, "Server '%s' is not registered.\n", args[0])
-		return nil
+	targetName := args[0]
+
+	// Try to find as server first
+	if server := proxy.Server(targetName); server != nil {
+		return r.listPlayersOnServer(server)
 	}
 
-	return r.listPlayersOnServer(target)
+	// Try to find as player
+	if player := proxy.PlayerByName(targetName); player != nil {
+		return r.showPlayerInfo(player)
+	}
+
+	fmt.Fprintf(r.writer, "No server or player named '%s' found.\n", targetName)
+	return nil
+}
+
+func (r *consoleRunner) showPlayerInfo(player jproxy.Player) error {
+	// Player.Username() returns the exact username including Bedrock '*' prefix if present
+	fmt.Fprintf(r.writer, "Player: %s\n", player.Username())
+
+	if conn := player.CurrentServer(); conn != nil && conn.Server() != nil {
+		server := conn.Server().ServerInfo()
+		fmt.Fprintf(r.writer, "  Current server: %s (%s)\n", server.Name(), server.Addr().String())
+	} else {
+		fmt.Fprintln(r.writer, "  Current server: pending connection")
+	}
+
+	fmt.Fprintf(r.writer, "  Protocol version: %d\n", player.ProtocolVersion())
+	if player.RemoteAddress() != nil {
+		fmt.Fprintf(r.writer, "  Remote address: %s\n", player.RemoteAddress().String())
+	}
+
+	return nil
 }
 
 func (r *consoleRunner) javaProxy() *jproxy.Proxy {
@@ -506,6 +532,9 @@ func (r *consoleRunner) kickPlayer(args []string) error {
 func (r *consoleRunner) moveCommand(args []string) error {
 	if len(args) < 2 {
 		fmt.Fprintln(r.writer, "Usage: move <player|server> <server>")
+		fmt.Fprintln(r.writer, "       move server:<server_name> <destination>  (force server mode)")
+		fmt.Fprintln(r.writer, "       move player:<player_name> <destination>  (force player mode)")
+		fmt.Fprintln(r.writer, "Note: Bedrock player names may start with '*' - include the full name")
 		return nil
 	}
 
@@ -533,12 +562,45 @@ func (r *consoleRunner) moveCommand(args []string) error {
 	}
 
 	subject := args[0]
-	if player := proxy.PlayerByName(subject); player != nil {
+
+	// Handle explicit prefixes for disambiguation
+	if strings.HasPrefix(subject, "server:") {
+		serverName := strings.TrimPrefix(subject, "server:")
+		r.moveServerPlayers(proxy, serverName, destination, timeout)
+		return nil
+	}
+	if strings.HasPrefix(subject, "player:") {
+		playerName := strings.TrimPrefix(subject, "player:")
+		if player := proxy.PlayerByName(playerName); player != nil {
+			r.moveSinglePlayer(player, destination, timeout)
+			return nil
+		}
+		fmt.Fprintf(r.writer, "Player '%s' is not online.\n", playerName)
+		return nil
+	}
+
+	// Smart resolution: check both player and server
+	player := proxy.PlayerByName(subject)
+	server := proxy.Server(subject)
+
+	if player != nil && server != nil {
+		// Ambiguous case - both exist
+		fmt.Fprintf(r.writer, "Ambiguous: both player '%s' and server '%s' exist.\n", subject, subject)
+		fmt.Fprintln(r.writer, "Use 'move player:"+subject+"' or 'move server:"+subject+"' to specify.")
+		return nil
+	}
+
+	if player != nil {
 		r.moveSinglePlayer(player, destination, timeout)
 		return nil
 	}
 
-	r.moveServerPlayers(proxy, subject, destination, timeout)
+	if server != nil {
+		r.moveServerPlayers(proxy, subject, destination, timeout)
+		return nil
+	}
+
+	fmt.Fprintf(r.writer, "No player or server named '%s' found.\n", subject)
 	return nil
 }
 
